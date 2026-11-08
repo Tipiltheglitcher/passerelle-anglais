@@ -1,0 +1,30 @@
+# Dépendances et compilation
+node_modules/
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Journaux et fichiers temporaires
+*.log
+npm-debug.log*
+*.tmp
+*.local
+.cache/
+
+# Secrets et environnement local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Éditeurs, système, outils locaux
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+.claude/

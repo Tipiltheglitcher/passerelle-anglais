@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Passerelle — progressez en anglais du niveau A2 au niveau B1 avec des exercices générés à l'infini, la répétition espacée et un suivi personnalisé." />
+    <meta name="theme-color" content="#f6f6fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Passerelle — Anglais A2 → B1</title>
+    <script>
+      // Applique le thème avant le premier rendu pour éviter un flash de couleur.
+      (function () {
+        try {
+          var pref = localStorage.getItem('passerelle.theme');
+          var dark = pref === 'dark' || ((!pref || pref === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>Passerelle nécessite JavaScript pour fonctionner.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

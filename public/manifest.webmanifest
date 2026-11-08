@@ -1,0 +1,13 @@
+{
+  "name": "Passerelle — Anglais A2 → B1",
+  "short_name": "Passerelle",
+  "description": "Progressez en anglais du niveau A2 au niveau B1.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f6fb",
+  "theme_color": "#6d5efc",
+  "lang": "fr",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
