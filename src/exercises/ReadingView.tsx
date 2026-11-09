@@ -1,6 +1,10 @@
-/** Compréhension écrite : texte puis questions à choix (correction immédiate par question). */
+/**
+ * Texte (ou dialogue) suivi de questions à choix, corrigées question par
+ * question : compréhension écrite, textes longs, analyse d'arguments et de
+ * dialogues.
+ */
 import { useEffect, useState } from 'react';
-import type { ReadingExercise } from '@/engine/exercises/types';
+import { FOCUS_LABELS, type ReadingExercise } from '@/engine/exercises/types';
 import type { ExerciseViewProps } from './common';
 import { AudioButton } from './audio';
 import { IconCheck, IconClose } from '@/ui/icons';
@@ -15,29 +19,56 @@ export function ReadingView({ exercise: ex, phase, onChange, onSubmit }: Exercis
     setAnswers(next);
     if (Object.keys(next).length === ex.questions.length) {
       const correct = ex.questions.filter((q, i) => q.options[next[i]]?.correct).length;
-      const tags = ex.questions.filter((q, i) => !q.options[next[i]]?.correct).map(() => 'meaning');
+      const tags = ex.questions.flatMap((q, i) => (q.options[next[i]]?.correct ? [] : [q.focus ? `reading_${q.focus}` : 'meaning']));
       onChange({ kind: 'multi', correct, total: ex.questions.length, mistakes: ex.questions.length - correct, tags });
       setTimeout(onSubmit, 900);
     }
   };
 
+  const long = ex.type !== 'reading';
+  const paragraphs = ex.text ? ex.text.split(long ? /\n\s*\n/ : '\n') : [];
+  const audio = ex.lines ? ex.lines.map((l) => l.text).join(' ') : ex.text.replace(/\n+/g, ' ');
+
   return (
-    <div className="ex-reading">
+    <div className={`ex-reading${long ? ' is-long' : ''}`}>
       <article className="reading-text" lang="en">
         <header className="row">
-          <h3>{ex.title}</h3>
-          <span className="spacer" />
-          <AudioButton text={ex.text.replace(/\n/g, ' ')} label="Écouter le texte" />
+          <div className="spacer">
+            {ex.genre && <p className="reading-genre">{ex.genre}</p>}
+            <h3>{ex.title}</h3>
+          </div>
+          <AudioButton text={audio} label={ex.lines ? "Écouter l'échange" : 'Écouter le texte'} />
         </header>
-        {ex.text.split('\n').map((line, i) => (
-          <p key={i}>{line}</p>
-        ))}
+        {ex.lines ? (
+          <div className="exchange">
+            {ex.lines.map((l, i) => (
+              <p key={i} className="exchange-line">
+                <span className="exchange-speaker">{l.speaker}</span>
+                <span>{l.text}</span>
+              </p>
+            ))}
+          </div>
+        ) : (
+          paragraphs.map((p, i) =>
+            long ? (
+              <p key={i} className="reading-para">
+                <span className="para-num" aria-label={`Paragraphe ${i + 1}`}>
+                  {i + 1}
+                </span>
+                {p}
+              </p>
+            ) : (
+              <p key={i}>{p}</p>
+            ),
+          )
+        )}
       </article>
       <ol className="questions">
         {ex.questions.map((q, qi) => {
           const a = answers[qi];
           return (
             <li key={qi} className="question">
+              {q.focus && <span className="question-focus">{FOCUS_LABELS[q.focus]}</span>}
               <p className="question-text" lang="en">
                 {q.q}
               </p>

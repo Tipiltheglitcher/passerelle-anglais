@@ -9,7 +9,9 @@ import { store, useAppState } from '@/state/store';
 import { ALL_UNITS, SKILL_BY_ID } from '@/content/curriculum';
 import { ERROR_TAGS } from '@/engine/generator/errors';
 import { EXERCISE_LABELS } from '@/engine/exercises/types';
-import { effectiveMastery, estimateLevel, skillStatus } from '@/engine/learning/mastery';
+import { effectiveMastery, skillStatus } from '@/engine/learning/mastery';
+import { estimateProfile, levelEvidence, unlockedStages } from '@/engine/learning/progression';
+import { CEFR_LEVELS, DOMAINS, DOMAIN_LABELS, STAGE_BY_ID } from '@/content/levels';
 import type { AttemptRecord, SessionMode } from '@/engine/learning/types';
 import { formatDuration, liveStreak } from '@/state/dates';
 import { attemptsSince, bucketize, byFormat, periodDays, previousDays, sessionsSince, topErrors, totalsOf, type Period } from '@/state/stats';
@@ -69,7 +71,9 @@ export function StatsPage() {
   const formats = useMemo(() => (periodAttempts ? byFormat(periodAttempts).sort((a, b) => a.correct / a.total - b.correct / b.total) : []), [periodAttempts]);
   const errors = useMemo(() => (periodAttempts ? topErrors(periodAttempts) : null), [periodAttempts]);
   const sessions = useMemo(() => sessionsSince(s.sessions, days[0]), [s.sessions, days]);
-  const level = useMemo(() => estimateLevel(s.skills, now), [s.skills, now]);
+  const level = useMemo(() => estimateProfile(s.skills, s.profile, now), [s.skills, s.profile, now]);
+  const unlocked = useMemo(() => unlockedStages(s.profile, s.skills, now), [s.profile, s.skills, now]);
+  const [openWriting, setOpenWriting] = useState<string | null>(null);
   const everExercises = Object.values(s.daily).reduce((n, d) => n + d.exercises, 0);
 
   if (everExercises === 0) {
@@ -121,7 +125,7 @@ export function StatsPage() {
         </h2>
         <div className="grid stats-now">
           <Card className="level-card">
-            <ProgressRing value={level.progress} size={128} stroke={11} label={`Progression vers B1 : ${pct(level.progress)}`}>
+            <ProgressRing value={level.progress} size={128} stroke={11} label={`Progression vers ${STAGE_BY_ID[level.stage].to} : ${pct(level.progress)}`}>
               <div>
                 <div className="ring-big">{level.label}</div>
                 <div className="faint tiny">niveau estimé</div>
@@ -131,20 +135,15 @@ export function StatsPage() {
               <p className="small muted" style={{ margin: 0 }}>
                 {level.description}
               </p>
-              <dl className="mini-dl">
-                <div>
-                  <dt>Notions A2</dt>
-                  <dd>{pct(level.a2)}</dd>
-                </div>
-                <div>
-                  <dt>Notions B1</dt>
-                  <dd>{pct(level.b1)}</dd>
-                </div>
-                <div>
-                  <dt>Vocabulaire</dt>
-                  <dd>{pct(level.vocab)}</dd>
-                </div>
+              <dl className="mini-dl" aria-label="Niveau estimé par domaine">
+                {DOMAINS.map((d) => (
+                  <div key={d}>
+                    <dt>{DOMAIN_LABELS[d]}</dt>
+                    <dd>{level.domains[d].label ?? '—'}</dd>
+                  </div>
+                ))}
               </dl>
+              <p className="faint tiny" style={{ margin: 0 }}>Estimation pédagogique, pas une certification CECRL.</p>
               <span className="small">
                 <IconFlame size={16} className="c-streak" aria-hidden /> Série : <strong>{liveStreak(s.profile.streak, s.profile.lastActiveDate, now)}</strong> j · record {s.profile.bestStreak} j
               </span>
@@ -159,15 +158,57 @@ export function StatsPage() {
             </div>
             <BarRows
               label="Maîtrise moyenne de chaque unité"
-              rows={ALL_UNITS.map((u) => {
+              rows={ALL_UNITS.filter((u) => unlocked.has(u.stage) || u.skills.some((id) => (s.skills[id]?.attempts ?? 0) > 0)).map((u) => {
                 const ms = u.skills.map((id) => effectiveMastery(s.skills[id], now));
                 const avg = ms.reduce((a, b) => a + b, 0) / Math.max(1, ms.length);
-                const mastered = u.skills.filter((id) => skillStatus(id, s.skills, now) === 'mastered').length;
+                const mastered = u.skills.filter((id) => skillStatus(id, s.skills, now, unlocked) === 'mastered').length;
                 return { key: u.id, label: u.title, value: avg, valueText: pct(avg), sub: `${mastered}/${u.skills.length} maîtrisées` };
               })}
             />
           </Card>
         </div>
+        <Card>
+          <div className="card-title">
+            <h3>Profil par niveau</h3>
+            <span className="small faint">compétences évaluées de façon fiable</span>
+          </div>
+          <BarRows
+            label="Maîtrise moyenne et couverture des compétences de chaque niveau"
+            rows={CEFR_LEVELS.map((lv) => {
+              const ev = levelEvidence(lv, s.skills, now);
+              const passed = (s.profile.levelsPassed ?? []).includes(lv);
+              return { key: lv, label: `Niveau ${lv}${passed ? ' · validé' : ''}`, value: ev.mastery, valueText: pct(ev.mastery), sub: `${pct(ev.coverage)} des notions travaillées` };
+            })}
+          />
+        </Card>
+        {s.writings.length > 0 && (
+          <Card>
+            <div className="card-title">
+              <h3>Mes rédactions</h3>
+              <span className="small faint">{s.writings.length} texte{s.writings.length > 1 ? 's' : ''}</span>
+            </div>
+            <p className="small muted">Score automatique : longueur, éléments imposés, erreurs certaines. L’auto-évaluation est indicative.</p>
+            <ul className="writing-history">
+              {s.writings.slice(0, 20).map((w) => (
+                <li key={w.id}>
+                  <button type="button" className="link-btn" aria-expanded={openWriting === w.id} onClick={() => setOpenWriting(openWriting === w.id ? null : w.id)}>
+                    {w.title}
+                  </button>
+                  <span className="small faint">
+                    {' '}
+                    · {new Date(w.ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} · {w.words} mots · vérifications {pct(w.autoScore)}
+                    {w.selfScore !== undefined ? ` · auto-évaluation ${pct(w.selfScore)}` : ''}
+                  </span>
+                  {openWriting === w.id && (
+                    <div className="writing-model" lang="en">
+                      {w.text.split(/\n/).map((l, i) => (l.trim() ? <p key={i}>{l}</p> : null))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         {fragile.length > 0 && (
           <Card>
             <div className="card-title">

@@ -457,7 +457,8 @@
   gap: 14px;
 }
 
-.unit-head h2 {
+.unit-head h2,
+.unit-head .unit-title {
   margin: 0;
   font-size: 1.15rem;
 }

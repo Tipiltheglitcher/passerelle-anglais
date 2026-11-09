@@ -40,6 +40,19 @@ const NON_GRAMMATICAL_TAGS = new Set([
   'might_possibility',
   'relative_pronoun',
   'first_conditional',
+  // niveaux avancés : erreurs de sens (la phrase reste grammaticale hors contexte)
+  'deduction_meaning',
+  'should_have_meaning',
+  'futcont_vs_futperf',
+  'linking_whereas',
+  'needn_t_have',
+  'modal_nuance',
+  'hedging',
+  'nuance',
+  'implicature',
+  'style',
+  'cohesion',
+  'word_formation_meaning',
 ]);
 
 export function itemText(item: SentenceItem): string {
@@ -150,6 +163,7 @@ export interface FactoryOptions {
 }
 
 export function canMake(item: SentenceItem, type: ExerciseType): boolean {
+  if (item.allowedTypes && !item.allowedTypes.includes(type)) return false;
   const words = sentenceWords(item.slots).length;
   const grammaticalDistractors = item.distractors.filter((d) => !NON_GRAMMATICAL_TAGS.has(d.tag) && d.text !== '∅');
   switch (type) {
@@ -378,4 +392,14 @@ export const TYPE_DIFFICULTY: Record<ExerciseType, 1 | 2 | 3> = {
   transformation: 3,
   translateFrEn: 3,
   dictation: 3,
+  keyword: 3,
+  nuance: 2,
+  register: 2,
+  implicature: 2,
+  styleEdit: 3,
+  longReading: 3,
+  argument: 3,
+  dialogueAnalysis: 3,
+  textOrder: 3,
+  writing: 3,
 };

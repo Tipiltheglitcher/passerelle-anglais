@@ -35,6 +35,9 @@ export type FrTense =
   | 'venirDe'
   | 'enTrainDe'
   | 'enTrainDeImp'
+  | 'pqp' // plus-que-parfait
+  | 'condPasse' // conditionnel passé
+  | 'futAnt' // futur antérieur
   | 'infinitive';
 
 const H_ASPIRE = new Set([
@@ -222,6 +225,18 @@ export function frVerbPhrase(v: FrVerb, o: FrVerbPhraseOptions): string[] {
           : participle(v);
       return [...pre, ...clitics, present(aux, p), ...negWords, ...adv, pp];
     }
+    case 'pqp':
+    case 'condPasse':
+    case 'futAnt': {
+      const aux = agreeWithSubject ? ETRE : AVOIR;
+      const pp = agreeWithSubject
+        ? participle(v, o.gender, o.plural)
+        : o.objAgree
+          ? participle(v, o.objAgree.g, o.objAgree.plural)
+          : participle(v);
+      const conj = o.tense === 'pqp' ? imparfait(aux, p) : o.tense === 'condPasse' ? conditionnel(aux, p) : futur(aux, p);
+      return [...pre, ...clitics, conj, ...negWords, ...adv, pp];
+    }
     case 'futurProche':
       return [...pre, present(ALLER, p), ...negWords, ...adv, ...clitics, v.inf];
     case 'venirDe':
@@ -238,7 +253,7 @@ export function frVerbPhrase(v: FrVerb, o: FrVerbPhraseOptions): string[] {
 /** Groupe verbal avec un modal conjugué (pouvoir, devoir, vouloir, savoir) + infinitif. */
 export function frModalPhrase(
   modal: FrVerb,
-  modalTense: 'present' | 'conditionnel' | 'imparfait' | 'futur' | 'pc',
+  modalTense: 'present' | 'conditionnel' | 'imparfait' | 'futur' | 'pc' | 'condPasse',
   v: FrVerb,
   o: Omit<FrVerbPhraseOptions, 'tense'>,
 ): string[] {

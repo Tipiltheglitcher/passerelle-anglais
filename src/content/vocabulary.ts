@@ -4,7 +4,8 @@
  * Natures : n (nom), v (verbe), adj, adv, expr (expression), pv (phrasal verb),
  * idiom (expression idiomatique), ff (faux ami), coll (collocation).
  */
-import type { Level } from './lexicon/types';
+import type { CefrLevel } from './lexicon/types';
+import { RAW_ADVANCED } from './vocabulary-advanced';
 
 export interface VocabItem {
   id: string;
@@ -12,7 +13,7 @@ export interface VocabItem {
   en: string[];
   fr: string[];
   pos: string;
-  lv: Level;
+  lv: CefrLevel;
   ex?: { en: string; fr: string };
 }
 
@@ -20,6 +21,8 @@ export interface VocabTheme {
   id: string;
   title: string;
   icon: string;
+  /** Niveau du thème (sinon déduit du parcours A2 → B1). */
+  level?: CefrLevel;
   items: VocabItem[];
 }
 
@@ -576,12 +579,12 @@ function parse(): VocabTheme[] {
   const themes: VocabTheme[] = [];
   let current: VocabTheme | null = null;
   const seen = new Set<string>();
-  for (const raw of RAW.split('\n')) {
+  for (const raw of [...RAW.split(/\r?\n/), ...RAW_ADVANCED.split(/\r?\n/)]) {
     const line = raw.trim();
     if (!line) continue;
     if (line.startsWith('## ')) {
-      const [id, title, icon] = line.slice(3).split('|');
-      current = { id, title, icon, items: [] };
+      const [id, title, icon, level] = line.slice(3).split('|');
+      current = { id, title, icon, items: [], ...(level ? { level: level as CefrLevel } : {}) };
       themes.push(current);
       continue;
     }
@@ -599,7 +602,7 @@ function parse(): VocabTheme[] {
       en,
       fr,
       pos,
-      lv: (lv as Level) ?? 'A2',
+      lv: (lv as CefrLevel) ?? 'A2',
       ...(exEn && exFr ? { ex: { en: exEn, fr: exFr } } : {}),
     });
   }

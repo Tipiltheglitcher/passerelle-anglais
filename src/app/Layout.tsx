@@ -38,7 +38,7 @@ function Logo() {
       </svg>
       <span className="logo-text">
         Passerelle
-        <small>A2 → B1</small>
+        <small>A2 → C2</small>
       </span>
     </Link>
   );

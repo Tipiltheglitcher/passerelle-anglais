@@ -35,7 +35,18 @@ import {
   IconTimer,
   IconTrophy,
   IconWand,
+  IconKey,
+  IconScale,
+  IconQuote,
+  IconFeather,
+  IconScroll,
+  IconGlasses,
+  IconLayers,
+  IconPenTool,
+  IconDrama,
 } from '@/ui/icons';
+import { STAGES, levelTone } from '@/content/levels';
+import { PLACEMENT_BANDS } from '@/engine/learning/planner';
 
 type IconT = ComponentType<{ size?: number; 'aria-hidden'?: boolean }>;
 
@@ -54,6 +65,16 @@ const FORMAT_ICONS: Record<ExerciseType, IconT> = {
   contextChoice: IconPuzzle,
   transformation: IconRepeat,
   dictation: IconEar,
+  keyword: IconKey,
+  nuance: IconScale,
+  register: IconDrama,
+  implicature: IconQuote,
+  styleEdit: IconFeather,
+  longReading: IconScroll,
+  argument: IconGlasses,
+  dialogueAnalysis: IconChat,
+  textOrder: IconLayers,
+  writing: IconPenTool,
 };
 
 const FORMAT_HINTS: Record<ExerciseType, string> = {
@@ -71,16 +92,30 @@ const FORMAT_HINTS: Record<ExerciseType, string> = {
   contextChoice: 'Choisir selon la situation',
   transformation: 'Transformer une phrase',
   dictation: 'Écouter et écrire',
+  keyword: 'Reformuler avec un mot imposé',
+  nuance: 'Distinguer des formulations proches',
+  register: 'Adapter le ton à la situation',
+  implicature: 'Comprendre le sous-entendu',
+  styleEdit: 'Choisir la meilleure version',
+  longReading: 'Lire un texte long et l’analyser',
+  argument: 'Thèse, preuves, failles',
+  dialogueAnalysis: 'Intentions des locuteurs',
+  textOrder: 'Remettre un texte en ordre',
+  writing: 'Rédiger, vérifier, s’auto-évaluer',
 };
 
-const FORMAT_ORDER: ExerciseType[] = ['mcq', 'cloze', 'wordOrder', 'translateFrEn', 'translateEnFr', 'conjugation', 'errorCorrection', 'transformation', 'contextChoice', 'matching', 'dictation', 'listening', 'dialogue', 'reading'];
+const BASE_FORMATS: ExerciseType[] = ['mcq', 'cloze', 'wordOrder', 'translateFrEn', 'translateEnFr', 'conjugation', 'errorCorrection', 'transformation', 'contextChoice', 'matching', 'dictation', 'listening', 'dialogue', 'reading'];
+const ADVANCED_FORMATS: ExerciseType[] = ['keyword', 'nuance', 'register', 'implicature', 'styleEdit', 'longReading', 'argument', 'dialogueAnalysis', 'textOrder', 'writing'];
+const FORMAT_ORDER: ExerciseType[] = [...BASE_FORMATS, ...ADVANCED_FORMATS];
 
 /** Compétences utilisées pour un entraînement centré sur un format. */
 function poolForFormat(type: ExerciseType, skills: Record<string, SkillState>, now: number): string[] {
   if (type === 'reading') return ['reading'];
   if (type === 'dialogue') return ['dialogues'];
   const candidates = ALL_UNITS.flatMap((u) => u.skills).filter((id) => id !== 'reading' && id !== 'dialogues' && supportsFormat(id, type));
-  const open = candidates.filter((id) => skillStatus(id, skills, now) !== 'locked');
+  if (!candidates.length) return [];
+  const unlocked = store.unlocked(now);
+  const open = candidates.filter((id) => skillStatus(id, skills, now, unlocked) !== 'locked');
   // priorité aux notions déjà travaillées, puis aux notions disponibles
   const practiced = open.filter((id) => (skills[id]?.attempts ?? 0) > 0);
   const base = practiced.length >= 3 ? practiced : open;
@@ -199,7 +234,7 @@ export function PracticePage() {
                 Test de niveau
                 {s.profile.placementLevel && <Badge tone="accent">{s.profile.placementLevel}</Badge>}
               </span>
-              <span className="mode-text">18 questions pour situer votre niveau et adapter le parcours.</span>
+              <span className="mode-text">Test adaptatif de A2 à {PLACEMENT_BANDS[PLACEMENT_BANDS.length - 1].level} ({PLACEMENT_BANDS.reduce((n, b) => n + b.skills.length, 0)} questions au plus) : il s’arrête dès que le niveau est atteint.</span>
             </span>
           </Link>
         </div>
@@ -214,15 +249,28 @@ export function PracticePage() {
 
 function ExamsSection() {
   const sessions = useAppState((s) => s.sessions);
+  const levelsPassed = useAppState((s) => s.profile.levelsPassed ?? []);
   const now = Date.now();
   return (
     <section aria-labelledby="exams-title">
       <h2 id="exams-title" className="section-title">
         Examens blancs progressifs
       </h2>
-      <p className="muted section-sub">Sans correction pendant l'épreuve, comme un vrai examen. Seuil de réussite : 70 %. Le bilan détaille chaque réponse.</p>
+      <p className="muted section-sub">Sans correction pendant l'épreuve, comme un vrai examen. Seuil de réussite : 70 %. Les évaluations de fin de niveau exigent aussi 60 % dans chaque domaine ; leur réussite valide le niveau et ouvre l'étape suivante. Résultats indicatifs, pas une certification.</p>
+      {STAGES.map((stage) => {
+        const exams = EXAMS.filter((e) => (stage.id === 'a2b1' ? e.level === 'A2' || e.level === 'B1' : e.level === stage.to));
+        if (!exams.length) return null;
+        return (
+          <div key={stage.id} className="exam-group">
+            <h3 className="exam-group-title">
+              <Badge tone={levelTone(stage.to)}>
+                {stage.from} → {stage.to}
+              </Badge>{' '}
+              {stage.title}
+            </h3>
       <div className="exam-grid">
-        {EXAMS.map((e, i) => {
+        {exams.map((e) => {
+          const i = EXAMS.indexOf(e);
           const past = sessions.filter((r) => r.mode === 'exam' && r.title?.startsWith(e.title));
           const best = past.reduce((acc, r) => Math.max(acc, r.total ? r.correct / r.total : 0), 0);
           const passed = past.length > 0 && best >= 0.7;
@@ -236,16 +284,17 @@ function ExamsSection() {
                     {e.subtitle}
                   </p>
                 </div>
-                {passed && (
-                  <span className="exam-pass" title="Examen réussi">
+                {(e.gate ? (levelsPassed.includes(e.gate)) : passed) && (
+                  <span className="exam-pass" title={e.gate ? `Niveau ${e.gate} validé` : 'Examen réussi'}>
                     <IconMedal size={22} aria-hidden />
                   </span>
                 )}
               </div>
-              <p className="small faint exam-units">{e.units.map((u) => ALL_UNITS.find((x) => x.id === u)?.title).join(' · ')}</p>
+              {e.gate && <Badge tone="warning">Évaluation de fin de niveau {e.gate}</Badge>}
+              <p className="small faint exam-units">{e.covers ?? e.units.map((u) => ALL_UNITS.find((x) => x.id === u)?.title).join(' · ')}</p>
               <div className="exam-foot">
                 <span className="small muted">
-                  {e.size} questions · niveau {e.level}
+                  {e.size} exercices · niveau {e.level}
                   {past.length > 0 && (
                     <>
                       {' '}
@@ -261,6 +310,9 @@ function ExamsSection() {
           );
         })}
       </div>
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -274,8 +326,14 @@ function FormatsSection({ audio }: { audio: boolean }) {
         S'entraîner par format
       </h2>
       <p className="muted section-sub">Un seul type d'exercice, sur les notions que vous avez déjà abordées.</p>
+      {[
+        { id: 'base', title: 'Formats fondamentaux', list: BASE_FORMATS },
+        { id: 'adv', title: 'Formats avancés (B2 → C2)', list: ADVANCED_FORMATS },
+      ].map((g) => (
+        <div key={g.id} className="format-group">
+          <h3 className="exam-group-title">{g.title}</h3>
       <div className="format-grid">
-        {FORMAT_ORDER.map((t) => {
+        {g.list.map((t) => {
           const Icon = FORMAT_ICONS[t];
           const needsAudio = AUDIO_TYPES.has(t);
           const disabled = needsAudio && !audio;
@@ -300,6 +358,8 @@ function FormatsSection({ audio }: { audio: boolean }) {
           );
         })}
       </div>
+        </div>
+      ))}
     </section>
   );
 }
@@ -341,8 +401,13 @@ function CustomSession({ audio }: { audio: boolean }) {
           <h3>1. Notions à travailler</h3>
           <p className="muted small">Choisissez une ou plusieurs notions, de grammaire comme de vocabulaire. Les notions verrouillées restent accessibles ici.</p>
           <div className="unit-picks">
-            {ALL_UNITS.map((u) => (
+            {ALL_UNITS.map((u, ui) => (
               <fieldset key={u.id} className="unit-pick">
+                {(ui === 0 || ALL_UNITS[ui - 1].stage !== u.stage) && (
+                  <p className="unit-pick-stage">
+                    <Badge tone={levelTone(STAGES.find((st) => st.id === u.stage)!.to)}>{STAGES.find((st) => st.id === u.stage)!.title}</Badge>
+                  </p>
+                )}
                 <legend>{u.title}</legend>
                 <div className="chips">
                   {u.skills.map((id) => {

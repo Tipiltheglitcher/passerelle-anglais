@@ -33,7 +33,18 @@ export type Tense =
   | 'haveTo'
   | 'hadTo'
   | 'should'
-  | 'might';
+  | 'might'
+  // niveaux B2 → C1
+  | 'pastPerf'
+  | 'pastPerfCont'
+  | 'futPerf'
+  | 'futCont'
+  | 'wouldHave'
+  | 'mustHave'
+  | 'cantHave'
+  | 'mightHave'
+  | 'couldHave'
+  | 'shouldHave';
 
 export const TENSE_LABELS: Record<Tense, string> = {
   presSimple: 'présent simple',
@@ -53,6 +64,16 @@ export const TENSE_LABELS: Record<Tense, string> = {
   hadTo: 'had to',
   should: 'should',
   might: 'might',
+  pastPerf: 'past perfect (had + participe passé)',
+  pastPerfCont: 'past perfect continu (had been + -ing)',
+  futPerf: 'futur antérieur (will have + participe passé)',
+  futCont: 'futur continu (will be + -ing)',
+  wouldHave: 'conditionnel passé (would have + participe passé)',
+  mustHave: 'must have + participe passé (déduction)',
+  cantHave: "can't have + participe passé (impossibilité)",
+  mightHave: 'might have + participe passé (possibilité)',
+  couldHave: 'could have + participe passé',
+  shouldHave: 'should have + participe passé (reproche, regret)',
 };
 
 export interface ObjChoice {
@@ -194,6 +215,26 @@ export function verbGroup(c: Clause): VerbGroup {
     case 'should':
     case 'might':
       return { op: c.tense, words: [[v.base]] };
+    case 'pastPerf':
+      return { op: 'had', words: [EN.ppForms(v)] };
+    case 'pastPerfCont':
+      return { op: 'had', words: [['been'], EN.ingForms(v)] };
+    case 'futPerf':
+      return { op: 'will', words: [['have'], EN.ppForms(v)] };
+    case 'futCont':
+      return { op: 'will', words: [['be'], EN.ingForms(v)] };
+    case 'wouldHave':
+      return { op: 'would', words: [['have'], EN.ppForms(v)] };
+    case 'mustHave':
+      return { op: 'must', words: [['have'], EN.ppForms(v)] };
+    case 'cantHave':
+      return { op: 'can', words: [['have'], EN.ppForms(v)] };
+    case 'mightHave':
+      return { op: 'might', words: [['have'], EN.ppForms(v)] };
+    case 'couldHave':
+      return { op: 'could', words: [['have'], EN.ppForms(v)] };
+    case 'shouldHave':
+      return { op: 'should', words: [['have'], EN.ppForms(v)] };
     default:
       return { op: null, words: [[v.base]] };
   }
@@ -496,6 +537,17 @@ function frTenseFor(c: Clause): FrTenseChoice {
       return { tense: 'conditionnel', neg, adv };
     case 'goingTo':
       return { tense: 'futurProche', neg, adv };
+    case 'pastPerf':
+      if (c.ppAdv === 'already') adv = 'déjà';
+      return { tense: 'pqp', neg, adv };
+    case 'pastPerfCont':
+      return { tense: 'imparfait', neg, adv };
+    case 'futPerf':
+      return { tense: 'futAnt', neg, adv };
+    case 'futCont':
+      return { tense: 'futur', neg, adv };
+    case 'wouldHave':
+      return { tense: 'condPasse', neg, adv };
     default:
       return { tense: 'present', neg, adv };
   }
@@ -517,7 +569,7 @@ export function frVerbWords(c: Clause): { words: string[]; negated: boolean } {
   };
   const negWord = c.neg ? 'pas' : null;
   const sense = c.modalSense ?? (c.pred.skill ? 'ability' : 'permission');
-  const modal = (inf: string, tense: 'present' | 'conditionnel' | 'imparfait' | 'futur' | 'pc', n: string | null = negWord, adv: string | null = null) =>
+  const modal = (inf: string, tense: 'present' | 'conditionnel' | 'imparfait' | 'futur' | 'pc' | 'condPasse', n: string | null = negWord, adv: string | null = null) =>
     FR.frModalPhrase(frVerb(inf), tense, fv, { ...base, neg: n, adv });
 
   switch (c.tense) {
@@ -553,6 +605,23 @@ export function frVerbWords(c: Clause): { words: string[]; negated: boolean } {
         return { words: w, negated: true };
       }
       return { words: FR.frVerbPhrase(fv, { ...base, tense: 'futur', neg: null, adv: 'peut-être' }), negated: false };
+    case 'mustHave':
+      return { words: modal('devoir', 'pc'), negated: !!c.neg };
+    case 'cantHave':
+      // can't have done : impossibilité logique → « n'a pas pu »
+      return { words: modal('pouvoir', 'pc', 'pas'), negated: true };
+    case 'mightHave':
+      if (c.neg) {
+        const w = FR.frVerbPhrase(fv, { ...base, tense: 'pc', neg: 'pas' });
+        const i = w.lastIndexOf('pas');
+        w.splice(i, 0, 'peut-être');
+        return { words: w, negated: true };
+      }
+      return { words: FR.frVerbPhrase(fv, { ...base, tense: 'pc', neg: null, adv: 'peut-être' }), negated: false };
+    case 'couldHave':
+      return { words: modal('pouvoir', 'condPasse'), negated: !!c.neg };
+    case 'shouldHave':
+      return { words: modal('devoir', 'condPasse'), negated: !!c.neg };
     default: {
       const t = frTenseFor(c);
       return { words: FR.frVerbPhrase(fv, { ...base, tense: c.frTense ?? t.tense, neg: t.neg, adv: t.adv }), negated: !!t.neg };

@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { Link, navigate } from '@/app/router';
 import { store, useAppState } from '@/state/store';
 import { POS_LABELS, VOCAB_THEMES, type VocabItem } from '@/content/vocabulary';
+import { levelTone } from '@/content/levels';
 import { IRREGULAR_VERBS } from '@/content/lexicon/verbs';
 import { effectiveMastery } from '@/engine/learning/mastery';
 import { cardRetrievability } from '@/engine/learning/fsrs';
@@ -111,7 +112,9 @@ export function VocabPage() {
                 <Icon size={22} aria-hidden />
               </span>
               <span className="theme-body">
-                <span className="theme-title">{t.title}</span>
+                <span className="theme-title">
+                  {t.title} <Badge tone={levelTone(t.level ?? 'A2')}>{t.level ?? 'A2–B1'}</Badge>
+                </span>
                 <span className="theme-sub">
                   {st.total} mots · {st.seen} rencontrés
                   {st.due > 0 && <Badge tone="warning">{st.due} à revoir</Badge>}
@@ -234,7 +237,7 @@ function WordRow({ item, state, now }: { item: VocabItem; state: ItemState | und
         </div>
         <div className="word-tags">
           <Badge>{POS_LABELS[item.pos] ?? item.pos}</Badge>
-          <Badge tone={item.lv === 'B1' ? 'accent' : 'primary'}>{item.lv}</Badge>
+          <Badge tone={levelTone(item.lv)}>{item.lv}</Badge>
         </div>
       </div>
       {item.ex && (

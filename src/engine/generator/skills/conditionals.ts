@@ -15,7 +15,7 @@ import { lexemesOf, pickSubject } from '../pick';
 import type { Distractor, ItemGenerator } from '../types';
 import { objFor } from './future';
 
-type CondType = 'zero' | 'first' | 'second';
+type CondType = 'zero' | 'first' | 'second' | 'third';
 
 interface Pair {
   c: string;
@@ -23,6 +23,7 @@ interface Pair {
   r: string;
   rObj?: string;
   rNeg?: boolean;
+  cNeg?: boolean;
   types: CondType[];
 }
 
@@ -49,12 +50,26 @@ const PAIRS: Pair[] = [
   { c: 'have_time', r: 'go_cinema', types: ['first', 'second'] },
   { c: 'live_city', cObj: 'london', r: 'visit_museum', rObj: 'museum', types: ['second'] },
   { c: 'speak_language', cObj: 'spanish', r: 'travel_world', types: ['second'] },
+  // conditionnel 3 : passé révolu, hypothèse non réalisée
+  { c: 'study_hard', r: 'pass_exam', types: ['third'] },
+  { c: 'revise_exam', r: 'pass_exam', types: ['third'] },
+  { c: 'have_time', r: 'visit_family', rObj: 'grandparents', types: ['third'] },
+  { c: 'have_time', r: 'go_cinema', types: ['third'] },
+  { c: 'miss_bus', cNeg: true, r: 'be_late', rNeg: true, types: ['third'] },
+  { c: 'take_umbrella', r: 'get_wet', rNeg: true, types: ['third'] },
+  { c: 'have_money', r: 'buy_thing', rObj: 'car', types: ['third'] },
+  { c: 'win_lottery', r: 'travel_world', types: ['third'] },
+  { c: 'leave_home', r: 'miss_bus', rNeg: true, types: ['third'] },
+  { c: 'take_taxi', r: 'arrive_late', rNeg: true, types: ['third'] },
+  { c: 'be_ill', cNeg: true, r: 'go_work', types: ['third'] },
+  { c: 'be_tired', cNeg: true, r: 'go_cinema', types: ['third'] },
 ];
 
 const TENSES: Record<CondType, { cond: Tense; res: Tense; frCond: FR.FrTense; frRes: FR.FrTense }> = {
   zero: { cond: 'presSimple', res: 'presSimple', frCond: 'present', frRes: 'present' },
   first: { cond: 'presSimple', res: 'will', frCond: 'present', frRes: 'futur' },
   second: { cond: 'pastSimple', res: 'would', frCond: 'imparfait', frRes: 'conditionnel' },
+  third: { cond: 'pastPerf', res: 'wouldHave', frCond: 'pqp', frRes: 'condPasse' },
 };
 
 function pronounVersion(s0: Subject): Subject {
@@ -71,7 +86,7 @@ function makeConditional(type: CondType): ItemGenerator {
     if (ctx.level === 'A2' && (pc.lv === 'B1' || pr.lv === 'B1')) return null;
     const subj = pickSubject(ctx, { pronouns: 0.7, adult: pc.adult || pr.adult });
     const t = TENSES[type];
-    const cond: Clause = { subj, pred: pc, obj: objFor(ctx, pc, pair.cObj), tense: t.cond, frTense: t.frCond };
+    const cond: Clause = { subj, pred: pc, obj: objFor(ctx, pc, pair.cObj), tense: t.cond, frTense: t.frCond, neg: !!pair.cNeg };
     const res: Clause = { subj: pronounVersion(subj), pred: pr, obj: objFor(ctx, pr, pair.rObj), tense: t.res, neg: !!pair.rNeg };
     if ((pc.obj && !cond.obj) || (pr.obj && !res.obj)) return null;
     const rc = realizeEn(cond);
@@ -103,7 +118,27 @@ function makeConditional(type: CondType): ItemGenerator {
           ? EN.presentSimple(vC, subj.person, subj.num)
           : EN.pastSimple(vC, subj.person, subj.num);
     let distractors: Distractor[];
-    if (blankCond) {
+    const ppC = EN.ppForms(vC)[0];
+    const ppR = EN.ppForms(vR)[0];
+    const pastC = EN.pastForms(vC)[0];
+    const pastR = EN.pastForms(vR)[0];
+    if (type === 'third') {
+      const cn = !!cond.neg;
+      const rn = !!res.neg;
+      distractors = blankCond
+        ? [
+            { text: `${cn ? "wouldn't" : 'would'} have ${ppC}`, tag: 'conditional_will_in_if' },
+            ...(baseC === 'be' ? [{ text: cn ? "weren't" : 'were', tag: 'third_conditional' }] : [{ text: cn ? "didn't " + baseC : pastC, tag: 'third_conditional' }]),
+            ...(ppC !== baseC ? [{ text: `${cn ? "hadn't" : 'had'} ${baseC}`, tag: 'pp_form' }] : []),
+            { text: `${cn ? "haven't" : 'have'} ${ppC}`, tag: 'third_conditional' },
+          ]
+        : [
+            { text: `${rn ? "wouldn't" : 'would'} ${baseR}`, tag: 'third_conditional' },
+            { text: `${rn ? "won't" : 'will'} have ${ppR}`, tag: 'third_conditional' },
+            ...(pastR !== ppR ? [{ text: `${rn ? "wouldn't" : 'would'} have ${pastR}`, tag: 'irregular_pp' }] : []),
+            { text: `${rn ? "wouldn't" : 'would'} have ${baseR}`, tag: 'pp_form' },
+          ];
+    } else if (blankCond) {
       distractors = [
         { text: `will ${baseC}`, tag: 'conditional_will_in_if' },
         { text: `would ${baseC}`, tag: 'conditional_will_in_if' },
@@ -130,17 +165,18 @@ function makeConditional(type: CondType): ItemGenerator {
       zero: `Conditionnel 0 (vérité générale, habitude) : If + présent, présent. Jamais de will après if.`,
       first: `Conditionnel 1 (situation possible dans le futur) : If + présent (${condForm}), will + base verbale. Pas de will dans la proposition en if.`,
       second: `Conditionnel 2 (situation imaginaire) : If + prétérit (${condForm}), would + base verbale.${pc.v === 'be' ? ' Avec be, on préfère were à toutes les personnes (If I were…).' : ''}`,
+      third: `Conditionnel 3 (passé révolu, hypothèse non réalisée) : If + past perfect (${condForm}), would have + participe passé. C'est l'équivalent de « si + plus-que-parfait, conditionnel passé ».`,
     };
     return buildItem({
       skillId: `${type}_conditional`,
       templateId: `cond.${type}.${blankCond ? 'if' : 'main'}.${pair.c}`,
-      level: type === 'zero' ? 'A2' : 'B1',
+      level: type === 'zero' ? 'A2' : type === 'third' ? 'B2' : 'B1',
       slots,
       end: '.',
       altOrders: [altOrder],
       fr,
       blankGroups: [blankCond ? indicesByRole(slots, ['c_aux', 'c_verb']) : indicesByRole(slots, ['r_aux', 'r_verb'])],
-      hints: [blankCond ? (pair.c.startsWith('be_') ? 'be' : baseC) : `${res.neg ? 'not / ' : ''}${baseR}`],
+      hints: [blankCond ? `${cond.neg ? 'not / ' : ''}${pair.c.startsWith('be_') ? 'be' : baseC}` : `${res.neg ? 'not / ' : ''}${baseR}`],
       distractors,
       explanation: why[type],
       lexemes: [...lexemesOf({ subj, pred: pc, obj: cond.obj }), `pred:${pr.id}`, `verb:${pr.v}`],
@@ -151,3 +187,4 @@ function makeConditional(type: CondType): ItemGenerator {
 export const zeroConditional = makeConditional('zero');
 export const firstConditional = makeConditional('first');
 export const secondConditional = makeConditional('second');
+export const thirdConditional = makeConditional('third');

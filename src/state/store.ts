@@ -9,7 +9,9 @@ import { SKILL_BY_ID, skillDef } from '@/content/curriculum';
 import type { EvalResult, Exercise, ExerciseType } from '@/engine/exercises/types';
 import { cardRetrievability, gradeFromResult, newCard, review, type Grade } from '@/engine/learning/fsrs';
 import { effectiveMastery, estimateLevel, updateSkill } from '@/engine/learning/mastery';
-import { EXAMS, placementResult, planSession, type PlanSlot } from '@/engine/learning/planner';
+import { EXAMS, GATE_TITLES, PLACEMENT_CONTINUE, placementResult, planSession, type PlanSlot } from '@/engine/learning/planner';
+import { gateOutcome, passedLevelsFromHistory, unlockedStages } from '@/engine/learning/progression';
+import type { StageId } from '@/content/levels';
 import { makeExercise, type SelectContext } from '@/engine/learning/select';
 import { advance as advanceSession, answerCurrent, createSession, currentItem, isAnswered, summarize, xpFor, type Session, type SessionItem } from '@/engine/learning/session';
 import {
@@ -26,6 +28,7 @@ import {
   type SessionRecord,
   type Settings,
   type SkillState,
+  type WritingRecord,
 } from '@/engine/learning/types';
 import { openBackend, type Backend } from '@/storage/db';
 import {
@@ -54,6 +57,8 @@ export interface AppState {
   exposure: Record<string, ExposureRecord>;
   activeSession: Session | null;
   audioSupported: boolean;
+  /** Productions écrites (les plus récentes d'abord). */
+  writings: WritingRecord[];
 }
 
 const EXPECTED_MS: Partial<Record<ExerciseType, number>> = {
@@ -71,10 +76,20 @@ const EXPECTED_MS: Partial<Record<ExerciseType, number>> = {
   matching: 30000,
   dialogue: 60000,
   reading: 120000,
+  keyword: 30000,
+  nuance: 25000,
+  register: 20000,
+  implicature: 25000,
+  styleEdit: 35000,
+  longReading: 300000,
+  argument: 240000,
+  dialogueAnalysis: 180000,
+  textOrder: 90000,
+  writing: 900000,
 };
 
 /** Formats « rejouables » conservés dans la révision des erreurs. */
-const REPLAYABLE = new Set<ExerciseType>(['cloze', 'mcq', 'wordOrder', 'translateFrEn', 'translateEnFr', 'errorCorrection', 'conjugation', 'transformation', 'contextChoice', 'dictation', 'listening']);
+const REPLAYABLE = new Set<ExerciseType>(['cloze', 'mcq', 'wordOrder', 'translateFrEn', 'translateEnFr', 'errorCorrection', 'conjugation', 'transformation', 'contextChoice', 'dictation', 'listening', 'keyword', 'nuance', 'register', 'implicature', 'styleEdit', 'textOrder']);
 
 const MODE_TITLES: Record<SessionMode, string> = {
   guided: 'Parcours guidé',
@@ -116,6 +131,7 @@ function initialState(): AppState {
     exposure: {},
     activeSession: null,
     audioSupported: ttsSupported(),
+    writings: [],
   };
 }
 
@@ -164,7 +180,7 @@ export class Store {
     try {
       this.backend = backend ?? (await openBackend());
       const now = Date.now();
-      const data = await loadAll(this.backend, now);
+      const data = await loadAll(this.backend, now, (s) => passedLevelsFromHistory(s, GATE_TITLES));
       this.set({
         status: 'ready',
         storage: this.backend.kind,
@@ -178,8 +194,9 @@ export class Store {
         exposure: data.exposure,
         activeSession: isSession(data.activeSession) ? data.activeSession : null,
         audioSupported: ttsSupported(),
+        writings: data.writings,
       });
-      // première ouverture : on enregistre profil et réglages
+      // première ouverture (ou migration) : on enregistre profil et réglages
       this.write((b) => b.put('profile', this.state.profile));
       this.write((b) => b.put('settings', this.state.settings));
     } catch (e) {
@@ -191,13 +208,18 @@ export class Store {
   // -------------------------------------------------------------------------
   // Contexte de génération
 
+  /** Étapes du parcours ouvertes (évaluations réussies, test de niveau). */
+  unlocked(now = Date.now()): Set<StageId> {
+    return unlockedStages(this.state.profile, this.state.skills, now);
+  }
+
   audioEnabled(): boolean {
     return this.state.audioSupported && this.state.settings.audio.enabled;
   }
 
   contentLevel(skillId: string): 'A2' | 'B1' {
     const def = SKILL_BY_ID[skillId];
-    if (def?.level === 'B1') return 'B1';
+    if (def && def.level !== 'A2') return 'B1';
     const lv = estimateLevel(this.state.skills, Date.now());
     return lv.a2 >= 0.6 ? 'B1' : 'A2';
   }
@@ -257,6 +279,7 @@ export class Store {
       focusTypes: o.focusTypes,
       vocabThemes: o.vocabThemes,
       examId: exam?.id,
+      unlocked: this.unlocked(now),
     });
     const items: SessionItem[] = [];
     const used = new Set<string>();
@@ -401,8 +424,16 @@ export class Store {
       signature: ex.signature,
       structure: ex.structure,
     };
-    const nextSession = answerCurrent(session, result, ms, session.mode === 'mistakes' || session.mode === 'guided' || session.mode === 'practice' || session.mode === 'adaptive' || session.mode === 'review' || session.mode === 'vocab' || session.mode === 'daily' ? this.makeRetry : undefined);
-    this.set({ skills, items, exposure, daily, profile, mistakes, activeSession: nextSession });
+    let nextSession = answerCurrent(session, result, ms, session.mode === 'mistakes' || session.mode === 'guided' || session.mode === 'practice' || session.mode === 'adaptive' || session.mode === 'review' || session.mode === 'vocab' || session.mode === 'daily' ? this.makeRetry : undefined);
+    if (session.mode === 'placement') nextSession = stopPlacementIfNeeded(nextSession);
+    // production écrite conservée
+    let writings = s.writings;
+    let writing: WritingRecord | null = null;
+    if (result.production && ex.type === 'writing') {
+      writing = { id: `${ex.id}-${now.toString(36)}`, ts: now, skillId: ex.skillId, title: ex.title, text: result.production, words: result.production.trim().split(/s+/).filter(Boolean).length, autoScore: result.score, selfScore: result.selfScore };
+      writings = [writing, ...writings].slice(0, 100);
+    }
+    this.set({ skills, items, exposure, daily, profile, mistakes, activeSession: nextSession, writings });
     const skillRec = skills[ex.skillId];
     this.write(async (b) => {
       await b.put('skills', skillRec);
@@ -412,6 +443,7 @@ export class Store {
       await b.put('attempts', attempt);
       if (mistakeChanges.put) await b.put('mistakes', mistakeChanges.put);
       if (mistakeChanges.del) await b.delete('mistakes', mistakeChanges.del);
+      if (writing) await b.put('writings', writing);
       await b.put('meta', { id: 'active', session: nextSession });
     });
     this.scheduleExposureFlush();
@@ -466,7 +498,17 @@ export class Store {
         changed.push(next);
       }
     }
-    if (session.mode === 'exam') result = `${Math.round(sum.accuracy * 100)} %`;
+    if (session.mode === 'exam') {
+      result = `${Math.round(sum.accuracy * 100)} %`;
+      const exam = EXAMS.find((e) => e.id === session.examId);
+      if (exam?.gate && session.answers.length >= Math.min(exam.size, session.items.length)) {
+        const g = gateOutcome(sum.bySkill);
+        if (g.passed) {
+          profile.levelsPassed = [...new Set([...(profile.levelsPassed ?? []), exam.gate])];
+          result = `${result} · niveau ${exam.gate} validé`;
+        } else result = `${result} · niveau ${exam.gate} non validé`;
+      }
+    }
     if (session.mode === 'daily') profile.dailyDone = dayKey(now);
     const today = dayKey(now);
     const daily = { ...this.state.daily };
@@ -603,6 +645,29 @@ export class Store {
   }
 }
 
+
+/**
+ * Test de niveau adaptatif : à la fin de chaque bande, si le score est
+ * nettement insuffisant, le test s'arrête (inutile de proposer les niveaux
+ * supérieurs).
+ */
+function stopPlacementIfNeeded(s: Session): Session {
+  const i = s.index;
+  const band = s.items[i]?.slot.band;
+  if (!band) return s;
+  const next = s.items[i + 1];
+  if (next && next.slot.band === band) return s;
+  if (!next) return s;
+  let total = 0;
+  let correct = 0;
+  s.answers.forEach((a, k) => {
+    if (s.items[k]?.slot.band !== band) return;
+    total += 1;
+    if (a.correct) correct += 1;
+  });
+  if (total && correct / total < PLACEMENT_CONTINUE) return { ...s, items: s.items.slice(0, i + 1) };
+  return s;
+}
 
 function isSession(v: unknown): v is Session {
   return !!v && typeof v === 'object' && Array.isArray((v as Session).items) && typeof (v as Session).index === 'number' && !(v as Session).finished;

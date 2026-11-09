@@ -1,11 +1,15 @@
 /**
- * Curriculum A2 → B1 : unités ordonnées, compétences, prérequis.
+ * Curriculum A2 → C2 : unités ordonnées, compétences, prérequis.
+ * L'étape A2 → B1 est définie ici ; les étapes avancées dans advanced/.
+ *
  * L'ordre suit une progression classique du CECRL : on consolide le présent et
  * le passé (A2), puis on aborde le futur, les modaux, le present perfect et
  * les structures complexes (B1).
  */
-import type { Level } from './lexicon/types';
+import type { CefrLevel } from './lexicon/types';
 import { VOCAB_THEMES } from './vocabulary';
+import { stageOfLevel, type Domain, type StageId } from './levels';
+import { ADVANCED_GUIDED, ADVANCED_SKILLS, ADVANCED_UNITS } from './advanced/curriculum-advanced';
 
 export type SkillKind = 'grammar' | 'vocab' | 'function';
 
@@ -15,24 +19,31 @@ export interface SkillDef {
   /** Intitulé anglais court. */
   en: string;
   unit: string;
-  level: Level;
+  level: CefrLevel;
   kind: SkillKind;
   prereq: string[];
   /** Description courte (une ligne). */
   summary: string;
+  /** Domaine suivi séparément (grammaire, lexique, écrit, oral). */
+  domain: Domain;
+  /** Étape du parcours. */
+  stage: StageId;
+  /** Production libre : évaluation automatique partielle et auto-évaluation. */
+  selfAssessed?: boolean;
 }
 
 export interface UnitDef {
   id: string;
   title: string;
   subtitle: string;
-  level: Level;
+  level: CefrLevel;
   icon: string;
   skills: string[];
   kind: SkillKind;
+  stage: StageId;
 }
 
-const G = (id: string, title: string, en: string, unit: string, level: Level, prereq: string[], summary: string): SkillDef => ({
+const G = (id: string, title: string, en: string, unit: string, level: CefrLevel, prereq: string[], summary: string): SkillDef => ({
   id,
   title,
   en,
@@ -41,6 +52,8 @@ const G = (id: string, title: string, en: string, unit: string, level: Level, pr
   kind: 'grammar',
   prereq,
   summary,
+  domain: 'grammar',
+  stage: 'a2b1',
 });
 
 export const GRAMMAR_SKILLS: SkillDef[] = [
@@ -94,18 +107,18 @@ export const GRAMMAR_SKILLS: SkillDef[] = [
 ];
 
 export const GRAMMAR_UNITS: UnitDef[] = [
-  { id: 'u_present', title: 'Le présent', subtitle: 'Habitudes et actions en cours', level: 'A2', icon: 'clock', kind: 'grammar', skills: [] },
-  { id: 'u_past', title: 'Raconter au passé', subtitle: 'Prétérit et past continuous', level: 'A2', icon: 'history', kind: 'grammar', skills: [] },
-  { id: 'u_questions', title: 'Poser des questions', subtitle: 'Questions ouvertes et réponses courtes', level: 'A2', icon: 'help', kind: 'grammar', skills: [] },
-  { id: 'u_nouns', title: 'Noms et déterminants', subtitle: 'Articles, quantités, possessifs', level: 'A2', icon: 'box', kind: 'grammar', skills: [] },
-  { id: 'u_compare', title: 'Comparer', subtitle: 'Comparatifs et superlatifs', level: 'A2', icon: 'scale', kind: 'grammar', skills: [] },
-  { id: 'u_prepositions', title: 'Le temps et le lieu', subtitle: 'Prépositions essentielles', level: 'A2', icon: 'map', kind: 'grammar', skills: [] },
-  { id: 'u_future', title: 'Parler du futur', subtitle: 'will, going to et les autres formes', level: 'A2', icon: 'rocket', kind: 'grammar', skills: [] },
-  { id: 'u_modals', title: 'Les verbes modaux', subtitle: 'Capacité, obligation, conseil, politesse', level: 'A2', icon: 'key', kind: 'grammar', skills: [] },
-  { id: 'u_perfect', title: 'Le present perfect', subtitle: 'Expérience, résultat, durée', level: 'B1', icon: 'link', kind: 'grammar', skills: [] },
-  { id: 'u_verbs', title: 'Enrichir ses phrases', subtitle: 'Verbes, adverbes et adjectifs', level: 'B1', icon: 'wand', kind: 'grammar', skills: [] },
-  { id: 'u_conditionals', title: 'Hypothèses et conditions', subtitle: 'if, when, as soon as', level: 'B1', icon: 'split', kind: 'grammar', skills: [] },
-  { id: 'u_complex', title: 'Phrases complexes', subtitle: 'Connecteurs, relatives, passif, discours indirect', level: 'B1', icon: 'layers', kind: 'grammar', skills: [] },
+  { id: 'u_present', title: 'Le présent', subtitle: 'Habitudes et actions en cours', level: 'A2', icon: 'clock', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_past', title: 'Raconter au passé', subtitle: 'Prétérit et past continuous', level: 'A2', icon: 'history', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_questions', title: 'Poser des questions', subtitle: 'Questions ouvertes et réponses courtes', level: 'A2', icon: 'help', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_nouns', title: 'Noms et déterminants', subtitle: 'Articles, quantités, possessifs', level: 'A2', icon: 'box', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_compare', title: 'Comparer', subtitle: 'Comparatifs et superlatifs', level: 'A2', icon: 'scale', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_prepositions', title: 'Le temps et le lieu', subtitle: 'Prépositions essentielles', level: 'A2', icon: 'map', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_future', title: 'Parler du futur', subtitle: 'will, going to et les autres formes', level: 'A2', icon: 'rocket', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_modals', title: 'Les verbes modaux', subtitle: 'Capacité, obligation, conseil, politesse', level: 'A2', icon: 'key', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_perfect', title: 'Le present perfect', subtitle: 'Expérience, résultat, durée', level: 'B1', icon: 'link', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_verbs', title: 'Enrichir ses phrases', subtitle: 'Verbes, adverbes et adjectifs', level: 'B1', icon: 'wand', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_conditionals', title: 'Hypothèses et conditions', subtitle: 'if, when, as soon as', level: 'B1', icon: 'split', kind: 'grammar', skills: [], stage: 'a2b1' },
+  { id: 'u_complex', title: 'Phrases complexes', subtitle: 'Connecteurs, relatives, passif, discours indirect', level: 'B1', icon: 'layers', kind: 'grammar', skills: [], stage: 'a2b1' },
 ];
 
 for (const u of GRAMMAR_UNITS) u.skills = GRAMMAR_SKILLS.filter((s) => s.unit === u.id).map((s) => s.id);
@@ -113,7 +126,8 @@ for (const u of GRAMMAR_UNITS) u.skills = GRAMMAR_SKILLS.filter((s) => s.unit ==
 /** Thèmes de vocabulaire : une compétence par thème. */
 const B1_THEMES = new Set(['professional', 'idioms', 'phrasal', 'falsefriends']);
 
-export const VOCAB_SKILLS: SkillDef[] = VOCAB_THEMES.map((t) => ({
+/** Thèmes du parcours A2 → B1 (les thèmes avancés appartiennent à leur étape). */
+export const VOCAB_SKILLS: SkillDef[] = VOCAB_THEMES.filter((t) => !t.level).map((t) => ({
   id: `vocab_${t.id}`,
   title: t.title,
   en: t.title,
@@ -122,6 +136,8 @@ export const VOCAB_SKILLS: SkillDef[] = VOCAB_THEMES.map((t) => ({
   kind: 'vocab' as const,
   prereq: [],
   summary: `${t.items.length} mots et expressions`,
+  domain: 'lexis' as const,
+  stage: 'a2b1' as const,
 }));
 
 export const VOCAB_UNIT: UnitDef = {
@@ -132,13 +148,14 @@ export const VOCAB_UNIT: UnitDef = {
   icon: 'book',
   kind: 'vocab',
   skills: VOCAB_SKILLS.map((s) => s.id),
+  stage: 'a2b1',
 };
 
 /** Compétences de communication (compréhension écrite, orale, dialogues). */
 export const COMM_SKILLS: SkillDef[] = [
-  { id: 'reading', title: 'Compréhension écrite', en: 'Reading', unit: 'u_skills', level: 'A2', kind: 'function', prereq: [], summary: 'Profils, récits, e-mails et annonces.' },
-  { id: 'listening', title: 'Compréhension orale', en: 'Listening', unit: 'u_skills', level: 'A2', kind: 'function', prereq: [], summary: 'Annonces, messages vocaux, météo.' },
-  { id: 'dialogues', title: 'Dialogues du quotidien', en: 'Everyday dialogues', unit: 'u_skills', level: 'A2', kind: 'function', prereq: [], summary: 'Café, hôtel, magasin, médecin, téléphone…' },
+  { id: 'reading', title: 'Compréhension écrite', en: 'Reading', unit: 'u_skills', level: 'A2', kind: 'function', prereq: [], summary: 'Profils, récits, e-mails et annonces.', domain: 'written', stage: 'a2b1' },
+  { id: 'listening', title: 'Compréhension orale', en: 'Listening', unit: 'u_skills', level: 'A2', kind: 'function', prereq: [], summary: 'Annonces, messages vocaux, météo.', domain: 'oral', stage: 'a2b1' },
+  { id: 'dialogues', title: 'Dialogues du quotidien', en: 'Everyday dialogues', unit: 'u_skills', level: 'A2', kind: 'function', prereq: [], summary: 'Café, hôtel, magasin, médecin, téléphone…', domain: 'oral', stage: 'a2b1' },
 ];
 
 export const COMM_UNIT: UnitDef = {
@@ -149,11 +166,19 @@ export const COMM_UNIT: UnitDef = {
   icon: 'chat',
   kind: 'function',
   skills: COMM_SKILLS.map((s) => s.id),
+  stage: 'a2b1',
 };
 
-export const ALL_SKILLS: SkillDef[] = [...GRAMMAR_SKILLS, ...VOCAB_SKILLS, ...COMM_SKILLS];
+// ---------------------------------------------------------------------------
+// Étapes avancées (B1 → C2)
+
+export const ADVANCED_SKILL_DEFS: SkillDef[] = ADVANCED_SKILLS.map((s) => ({ ...s, stage: stageOfLevel(s.level) }));
+
+export const ADVANCED_UNIT_DEFS: UnitDef[] = ADVANCED_UNITS.map((u) => ({ ...u, skills: ADVANCED_SKILL_DEFS.filter((s) => s.unit === u.id).map((s) => s.id) }));
+
+export const ALL_SKILLS: SkillDef[] = [...GRAMMAR_SKILLS, ...VOCAB_SKILLS, ...COMM_SKILLS, ...ADVANCED_SKILL_DEFS];
 export const SKILL_BY_ID: Record<string, SkillDef> = Object.fromEntries(ALL_SKILLS.map((s) => [s.id, s]));
-export const ALL_UNITS: UnitDef[] = [...GRAMMAR_UNITS, COMM_UNIT, VOCAB_UNIT];
+export const ALL_UNITS: UnitDef[] = [...GRAMMAR_UNITS, COMM_UNIT, VOCAB_UNIT, ...ADVANCED_UNIT_DEFS];
 export const UNIT_BY_ID: Record<string, UnitDef> = Object.fromEntries(ALL_UNITS.map((u) => [u.id, u]));
 
 export function skillDef(id: string): SkillDef {
@@ -162,5 +187,21 @@ export function skillDef(id: string): SkillDef {
   return s;
 }
 
-/** Ordre global du parcours guidé (grammaire puis vocabulaire entrelacé). */
-export const GUIDED_ORDER: string[] = GRAMMAR_UNITS.flatMap((u) => u.skills);
+/** Ordre du parcours guidé de chaque étape. */
+export const STAGE_GUIDED: Record<StageId, string[]> = {
+  a2b1: GRAMMAR_UNITS.flatMap((u) => u.skills),
+  ...ADVANCED_GUIDED,
+};
+
+/** Ordre global du parcours guidé, étape après étape. */
+export const GUIDED_ORDER: string[] = [...STAGE_GUIDED.a2b1, ...STAGE_GUIDED.b1b2, ...STAGE_GUIDED.b2c1, ...STAGE_GUIDED.c1c2];
+
+/** Unités d'une étape. */
+export function unitsOfStage(stage: StageId): UnitDef[] {
+  return ALL_UNITS.filter((u) => u.stage === stage);
+}
+
+/** Compétences d'une étape. */
+export function skillsOfStage(stage: StageId): SkillDef[] {
+  return ALL_SKILLS.filter((s) => s.stage === stage);
+}

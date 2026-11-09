@@ -185,3 +185,73 @@ describe('export, import et réinitialisation', () => {
     expect(store.getState().activeSession).not.toBeNull();
   });
 });
+
+describe('progression A2 → C2 (persistance)', () => {
+  it('test de niveau adaptatif : arrêt après une bande nettement échouée', async () => {
+    const store = await readyStore();
+    let s = store.startSession('placement');
+    const first = s.items[0].slot.band;
+    while (currentItem(s)) {
+      s = store.answer(s, ko, 2000);
+      s = store.next(s);
+    }
+    expect(s.answers.length).toBe(s.answers.filter((_, i) => s.items[i].slot.band === first).length);
+    expect(store.getState().profile.placementLevel).toBe('A2−');
+  });
+
+  it("une évaluation de fin de niveau réussie valide le niveau et ouvre l'étape suivante", async () => {
+    const backend = await freshBackend();
+    const store = await readyStore(backend);
+    expect(store.unlocked().has('b2c1')).toBe(false);
+    let s = store.startSession('exam', { examId: 'b2_final' });
+    while (currentItem(s)) {
+      s = store.answer(s, ok, 2000);
+      s = store.next(s);
+    }
+    expect(store.getState().profile.levelsPassed).toContain('B2');
+    expect(store.unlocked().has('b2c1')).toBe(true);
+    expect(store.getState().sessions[0].result).toMatch(/B2 validé/);
+    await store.flush();
+    const again = await readyStore(backend);
+    expect(again.getState().profile.levelsPassed).toContain('B2');
+  });
+
+  it('une évaluation interrompue ne valide rien', async () => {
+    const store = await readyStore();
+    let s = store.startSession('exam', { examId: 'b2_final' });
+    s = store.answer(s, ok, 2000);
+    store.end(s);
+    expect(store.getState().profile.levelsPassed ?? []).not.toContain('B2');
+  });
+
+  it('les rédactions sont conservées et restaurées', async () => {
+    const backend = await freshBackend();
+    const store = await readyStore(backend);
+    const s = store.startSession('practice', { focusSkills: ['writing_b2'] });
+    expect(s.items).toHaveLength(1);
+    const res: EvalResult = { ...ok, score: 0.8, approximate: true, selfScore: 0.75, production: 'In my view, remote work is better.' };
+    store.answer(s, res, 60000);
+    expect(store.getState().writings[0].text).toBe('In my view, remote work is better.');
+    await store.flush();
+    const again = await readyStore(backend);
+    expect(again.getState().writings[0]?.selfScore).toBe(0.75);
+  });
+
+  it("migration : un profil de la version précédente garde sa progression et retrouve le B1 validé", async () => {
+    const backend = await freshBackend();
+    await backend.put('profile', { id: 'me', createdAt: 1, placementDone: true, placementLevel: 'B1−', streak: 4, bestStreak: 9, totalXp: 1234 });
+    const bySkill: Record<string, { total: number; correct: number }> = { present_simple: { total: 10, correct: 9 }, reading: { total: 1, correct: 1 }, vocab_travel: { total: 2, correct: 2 } };
+    await backend.put('sessions', { id: 'old', mode: 'exam', startedAt: 5, endedAt: 6, total: 13, correct: 12, xp: 100, durationMs: 1, skills: [], bySkill, title: 'Examen blanc 4 — Niveau B1 complet' });
+    await backend.put('skills', { id: 'present_simple', mastery: 0.8, attempts: 30, correct: 25, streak: 2, lastSeen: 5, card: null, errors: {}, avgMs: 3000, lessonSeen: true });
+    const store = await readyStore(backend);
+    const p = store.getState().profile;
+    expect(p.totalXp).toBe(1234);
+    expect(p.levelsPassed).toEqual(['B1']);
+    expect(p.dataVersion).toBe(2);
+    expect(store.getState().skills.present_simple.mastery).toBe(0.8);
+    expect(store.unlocked().has('b1b2')).toBe(true);
+    await store.flush();
+    const raw = await backend.get<{ dataVersion?: number }>('profile', 'me');
+    expect(raw?.dataVersion).toBe(2);
+  });
+});

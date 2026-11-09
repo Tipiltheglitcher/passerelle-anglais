@@ -231,7 +231,7 @@ describe('planification des séances', () => {
   });
 
   it('examen blanc : uniquement les unités de l’examen, plus lecture, dialogue et écoute', () => {
-    for (const exam of EXAMS) {
+    for (const exam of EXAMS.filter((e) => !e.parts)) {
       const plan = planSession('exam', input({ examId: exam.id }));
       expect(plan).toHaveLength(exam.size);
       for (const p of plan) {
@@ -249,11 +249,12 @@ describe('planification des séances', () => {
     expect(plan).toHaveLength(EXAMS[0].size);
   });
 
-  it('test de niveau : couvre les trois bandes, puis estime un niveau', () => {
+  it('test de niveau : couvre toutes les bandes, puis estime un niveau', () => {
     const plan = planSession('placement', input());
     expect(plan).toHaveLength(PLACEMENT_BANDS.reduce((n, b) => n + b.skills.length, 0));
     const perfect = Object.fromEntries(plan.map((p) => [p.skillId, { correct: 1, total: 1 }]));
-    expect(placementResult(perfect).level).toBe('B1');
+    // toutes les bandes réussies : niveau de la bande la plus avancée
+    expect(placementResult(perfect).level).toBe(PLACEMENT_BANDS[PLACEMENT_BANDS.length - 1].level);
     const none = Object.fromEntries(plan.map((p) => [p.skillId, { correct: 0, total: 1 }]));
     const low = placementResult(none);
     expect(low.level).toBe('A2−');

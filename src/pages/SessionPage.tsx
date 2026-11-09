@@ -160,8 +160,15 @@ export function SessionPage({ query }: { query: URLSearchParams }) {
     const it = item;
     if (!it) return;
     // « Je ne sais pas » : réponse vide, comptée comme une erreur avec explication
+    const ty = it.exercise.type;
     const empty: ExerciseResponse =
-      it.exercise.type === 'wordOrder'
+      ty === 'textOrder'
+        ? { kind: 'sequence', ids: [] }
+        : ty === 'writing'
+          ? { kind: 'writing', text: '', report: { words: 0, lengthOk: false, checks: [], issues: [], repeated: [], autoScore: 0 }, self: [] }
+          : ty === 'longReading' || ty === 'argument' || ty === 'dialogueAnalysis'
+            ? { kind: 'multi', correct: 0, total: 1, mistakes: 1 }
+            : it.exercise.type === 'wordOrder'
         ? { kind: 'order', tiles: [] }
         : it.exercise.type === 'cloze' || it.exercise.type === 'conjugation'
           ? { kind: 'blanks', values: [] }

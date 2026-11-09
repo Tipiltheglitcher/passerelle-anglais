@@ -5,7 +5,9 @@ import { useAppState } from '@/state/store';
 import { summarize, type Session } from '@/engine/learning/session';
 import { SKILL_BY_ID } from '@/content/curriculum';
 import { ERROR_TAGS } from '@/engine/generator/errors';
-import { EXAMS } from '@/engine/learning/planner';
+import { EXAMS, PLACEMENT_BANDS } from '@/engine/learning/planner';
+import { gateOutcome } from '@/engine/learning/progression';
+import { DOMAIN_LABELS, type Domain } from '@/content/levels';
 import { formatDuration } from '@/state/dates';
 import { Button, ProgressRing } from '@/ui/kit';
 import { IconArrowRight, IconClock, IconFlame, IconHome, IconRepeat, IconTarget, IconTrophy, IconZap } from '@/ui/icons';
@@ -39,13 +41,15 @@ export function SessionSummary({ session }: { session: Session }) {
   const pct = Math.round(sum.accuracy * 100);
   const isExam = session.mode === 'exam';
   const isPlacement = session.mode === 'placement';
-  const passed = isExam && sum.accuracy >= 0.7;
   const exam = isExam ? EXAMS.find((e) => e.id === session.examId) : null;
+  const gate = exam?.gate ? gateOutcome(sum.bySkill) : null;
+  const complete = sum.total >= Math.min(exam?.size ?? 0, session.items.length);
+  const passed = isExam && (gate ? gate.passed && complete : sum.accuracy >= 0.7);
   const skillsRows = Object.entries(sum.bySkill).sort((a, b) => a[1].correct / a[1].total - b[1].correct / b[1].total);
   const topErrors = Object.entries(sum.errors)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
-  const title = isPlacement ? 'Test de niveau terminé' : isExam ? (passed ? 'Examen réussi !' : 'Examen terminé') : pct >= 80 ? 'Excellente séance !' : pct >= 50 ? 'Bonne séance !' : 'Séance terminée';
+  const title = isPlacement ? 'Test de niveau terminé' : gate ? (passed ? `Niveau ${exam!.gate} validé !` : 'Évaluation terminée') : isExam ? (passed ? 'Examen réussi !' : 'Examen terminé') : pct >= 80 ? 'Excellente séance !' : pct >= 50 ? 'Bonne séance !' : 'Séance terminée';
 
   if (sum.total === 0) {
     return (
@@ -78,7 +82,9 @@ export function SessionSummary({ session }: { session: Session }) {
               </ProgressRing>
               <p className="muted">
                 Vous avez réussi {sum.correct} questions sur {sum.total}. Le parcours a été adapté : les notions que vous maîtrisez déjà sont débloquées, et les exercices commenceront au bon niveau.
+                {session.items[session.items.length - 1]?.slot.band !== PLACEMENT_BANDS[PLACEMENT_BANDS.length - 1].id && ' Le test s’est arrêté dès que les questions sont devenues nettement trop difficiles.'}
               </p>
+              <p className="faint small">Estimation pédagogique fondée sur la grammaire, le lexique et l’usage, pas une certification CECRL.</p>
             </div>
           ) : (
             <div className="summary-hero">
@@ -111,14 +117,37 @@ export function SessionSummary({ session }: { session: Session }) {
                   <IconClock size={18} aria-hidden />
                   <span>{formatDuration(sum.durationMs)} d'exercices</span>
                 </div>
-                {isExam && (
+                {isExam && !gate && (
                   <div className={`summary-stat ${passed ? 'ok' : 'ko'}`}>
                     <IconTrophy size={18} aria-hidden />
                     <span>{passed ? 'Seuil de réussite (70 %) atteint' : 'Seuil de réussite : 70 %'}</span>
                   </div>
                 )}
+                {gate && (
+                  <div className={`summary-stat ${passed ? 'ok' : 'ko'}`}>
+                    <IconTrophy size={18} aria-hidden />
+                    <span>{passed ? `Niveau ${exam!.gate} validé : étape suivante ouverte` : !complete ? 'Évaluation interrompue : non comptabilisée' : gate.overall < 0.7 ? 'Il faut au moins 70 % au total' : `Domaine à renforcer : ${gate.weakDomains.map((d) => DOMAIN_LABELS[d]).join(', ')}`}</span>
+                  </div>
+                )}
               </div>
             </div>
+          )}
+
+          {gate && (
+            <section className="summary-section">
+              <h2>Par domaine</h2>
+              <ul className="summary-skills">
+                {(Object.entries(gate.byDomain) as [Domain, { total: number; correct: number; rate: number }][]).map(([d, b]) => (
+                  <li key={d}>
+                    <span className="summary-skill-name">{DOMAIN_LABELS[d]}</span>
+                    <span className={`summary-skill-score ${b.rate >= 0.6 ? 'ok' : b.rate >= 0.4 ? 'mid' : 'ko'}`}>
+                      {Math.round(b.rate * 100)} % ({b.correct}/{b.total})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="faint small">Réussite : au moins 70 % au total et 60 % dans chaque domaine comptant au moins trois exercices. Résultat indicatif, pas une certification.</p>
+            </section>
           )}
 
           <section className="summary-section">

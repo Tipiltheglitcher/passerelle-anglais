@@ -10,6 +10,7 @@ import { canMake } from '@/engine/exercises/factory';
 import { hasUsableExample, VOCAB_TYPES } from '@/engine/exercises/vocab';
 import type { ExerciseType } from '@/engine/exercises/types';
 import { VOCAB_THEMES } from '@/content/vocabulary';
+import { grammarExtras, SPECIAL_ENGINES } from './advancedSkills';
 
 const SENTENCE_TYPES: ExerciseType[] = [
   'cloze',
@@ -33,7 +34,8 @@ export function formatSupport(skillId: string): Map<ExerciseType, number> {
   const hit = cache.get(skillId);
   if (hit) return hit;
   const out = new Map<ExerciseType, number>();
-  if (skillId === 'reading') out.set('reading', 1);
+  if (SPECIAL_ENGINES[skillId]) for (const t of SPECIAL_ENGINES[skillId].formats) out.set(t, 1);
+  else if (skillId === 'reading') out.set('reading', 1);
   else if (skillId === 'listening') out.set('listening', 1);
   else if (skillId === 'dialogues') out.set('dialogue', 1);
   else if (skillId.startsWith('vocab_')) {
@@ -59,6 +61,7 @@ export function formatSupport(skillId: string): Map<ExerciseType, number> {
         for (const t of SENTENCE_TYPES) if (canMake(item, t)) counts.set(t, (counts.get(t) ?? 0) + 1);
       }
       for (const [t, n] of counts) out.set(t, n / Math.max(1, made));
+      for (const t of grammarExtras(skillId)) out.set(t, 1);
       if (skillId === 'past_simple_irregular') {
         out.set('conjugation', 1);
         out.set('matching', 1);

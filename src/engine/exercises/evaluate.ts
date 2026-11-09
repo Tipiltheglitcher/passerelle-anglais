@@ -8,6 +8,7 @@ import { cleanTypography, normalizeText, stripAccents } from '@/engine/core/text
 import { ERROR_TAGS } from '@/engine/generator/errors';
 import type { Distractor } from '@/engine/generator/types';
 import type { EvalResult, Exercise, ExerciseResponse } from './types';
+import { countWords } from '@/engine/generator/bank';
 
 const OK = ['Correct !', 'Bravo !', 'Excellent !', 'Parfait !', 'Très bien !'];
 
@@ -41,6 +42,12 @@ function wordModeMatch(value: string, answers: AnswerSpec): boolean {
   return answers.lattices.some((l) =>
     l.slots.every((sl) => sl.alts.some((a) => normalizeText(stripLeading(a, 'en')) === v)),
   );
+}
+
+/** Le mot imposé figure-t-il dans la réponse (sa forme contractée en n't est admise) ? */
+export function keyPresent(value: string, key: string): boolean {
+  const k = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${k}(?:n't)?\\b`, 'i').test(value.replace(/[’‘]/g, "'"));
 }
 
 export function evaluate(ex: Exercise, r: ExerciseResponse): EvalResult {
@@ -180,14 +187,100 @@ export function evaluate(ex: Exercise, r: ExerciseResponse): EvalResult {
         note: `Phrase correcte : ${ex.correctSentence}`,
       };
     }
+    case 'keyword': {
+      if (r.kind !== 'text') break;
+      const value = r.value.trim().replace(/[.?!]+$/, '');
+      if (!value) return { correct: false, score: 0, expected: ex.answerText, userAnswer: '', headline: 'Réponse vide' };
+      const m = matchAnswer(value, ex.answer, { maxTypos: 0 });
+      const words = countWords(value);
+      const hasKey = keyPresent(value, ex.key);
+      if (m.ok) return { correct: true, score: 1, expected: ex.answerText, userAnswer: value, headline: head, note: normalizeText(value) !== normalizeText(ex.answerText) ? `Réponse acceptée. Référence : ${ex.answerText}` : undefined };
+      const remarks: string[] = [];
+      if (!hasKey) remarks.push(`le mot imposé « ${ex.key} » doit figurer dans la réponse, sans modification`);
+      if (words < ex.minWords || words > ex.maxWords) remarks.push(`la réponse doit compter ${ex.minWords} à ${ex.maxWords} mots (une contraction compte pour deux) ; vous en avez écrit ${words}`);
+      return {
+        correct: false,
+        score: 0,
+        expected: ex.answerText,
+        userAnswer: value,
+        headline: 'Pas tout à fait…',
+        errorTag: !hasKey ? 'keyword_missing' : undefined,
+        note: remarks.length ? `Attention : ${remarks.join(' ; ')}.` : `Phrase attendue : ${ex.before} ${ex.answerText} ${ex.after}`.replace(/\s+([,.!?;:])/g, '$1'),
+        diff: diffWords(ex.answerText, value),
+      };
+    }
+    case 'nuance':
+    case 'register':
+    case 'implicature':
+    case 'styleEdit': {
+      if (r.kind !== 'choice') break;
+      const opt = ex.options[r.index];
+      const correct = ex.options.find((o) => o.correct);
+      const ok = !!opt?.correct;
+      return {
+        correct: ok,
+        score: ok ? 1 : 0,
+        expected: correct?.text ?? '',
+        userAnswer: opt?.text ?? '',
+        headline: ok ? head : 'Pas tout à fait…',
+        errorTag: ok ? undefined : opt?.tag,
+      };
+    }
+    case 'textOrder': {
+      if (r.kind !== 'sequence') break;
+      const ids = r.ids;
+      const exact = ex.orders.some((o) => o.length === ids.length && o.every((id, i) => id === ids[i]));
+      // score partiel : proportion de paires consécutives correctes (meilleur ordre accepté)
+      const pairScore = (order: string[]) => {
+        if (order.length < 2) return 1;
+        let n = 0;
+        for (let i = 0; i < ids.length - 1; i++) {
+          const a = order.indexOf(ids[i]);
+          if (a >= 0 && order[a + 1] === ids[i + 1]) n++;
+        }
+        return n / (order.length - 1);
+      };
+      const score = exact ? 1 : Math.max(...ex.orders.map(pairScore));
+      const byId = new Map(ex.segments.map((s) => [s.id, s]));
+      return {
+        correct: exact,
+        score: Math.round(score * 100) / 100,
+        expected: ex.orders[0].map((id, i) => `${i + 1}. ${byId.get(id)?.role ?? ''}`).join(' · '),
+        userAnswer: `${Math.round(score * 100)} % des enchaînements corrects`,
+        headline: exact ? head : score >= 0.5 ? 'Presque : quelques enchaînements à revoir' : 'Ordre à revoir',
+        errorTag: exact ? undefined : 'cohesion',
+      };
+    }
+    case 'writing': {
+      if (r.kind !== 'writing') break;
+      const rep = r.report;
+      const selfScore = r.self.length ? r.self.reduce((a, b) => a + b, 0) / r.self.length : undefined;
+      const ok = rep.lengthOk && rep.autoScore >= 0.7;
+      return {
+        correct: ok,
+        score: rep.autoScore,
+        expected: '',
+        userAnswer: `${rep.words} mots`,
+        headline: ok ? 'Critères vérifiables respectés' : 'Critères vérifiables à reprendre',
+        errorTag: rep.issues[0] ? `w_${rep.issues[0].tag}` : !rep.lengthOk ? 'w_length' : undefined,
+        approximate: true,
+        selfScore,
+        production: r.text,
+        note: 'Évaluation partielle : seuls la longueur, les éléments imposés et certaines erreurs certaines sont vérifiés automatiquement. L’argumentation, la richesse et la correction d’ensemble relèvent de votre auto-évaluation (indicative).',
+      };
+    }
     case 'matching':
     case 'dialogue':
-    case 'reading': {
+    case 'reading':
+    case 'longReading':
+    case 'argument':
+    case 'dialogueAnalysis': {
       if (r.kind !== 'multi') break;
       const score = r.total ? Math.max(0, (r.correct - (ex.type === 'matching' ? r.mistakes * 0.5 : 0)) / r.total) : 0;
       const perfect = ex.type === 'matching' ? r.mistakes === 0 : r.correct === r.total;
+      const pass = 'passRate' in ex && ex.passRate ? ex.passRate : 0.75;
       // réussite : une seule erreur tolérée en association, 75 % de bonnes réponses en lecture / dialogue
-      const ok = ex.type === 'matching' ? r.mistakes <= 1 && r.correct === r.total : r.total > 0 && r.correct / r.total >= 0.75;
+      const ok = ex.type === 'matching' ? r.mistakes <= 1 && r.correct === r.total : r.total > 0 && r.correct / r.total >= pass;
       return {
         correct: ok,
         score: perfect ? 1 : Math.round(score * 100) / 100,

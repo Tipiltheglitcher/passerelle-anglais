@@ -1,5 +1,5 @@
 import type { EvalResult, Exercise } from '@/engine/exercises/types';
-import { EXERCISE_LABELS } from '@/engine/exercises/types';
+import { EXERCISE_LABELS, INSIGHT_TYPES, PASSAGE_TYPES } from '@/engine/exercises/types';
 import { errorExplanation, errorLabel } from '@/engine/exercises/evaluate';
 import { SKILL_BY_ID } from '@/content/curriculum';
 import type { DiffOp } from '@/engine/core/lattice';
@@ -13,6 +13,10 @@ import { MatchingView } from './MatchingView';
 import { DialogueView } from './DialogueView';
 import { ReadingView } from './ReadingView';
 import { AudioButton } from './audio';
+import { InsightView } from './InsightView';
+import { KeywordView } from './KeywordView';
+import { TextOrderView } from './TextOrderView';
+import { WritingView } from './WritingView';
 import { IconCircleCheck, IconCircleX, IconLightbulb } from '@/ui/icons';
 
 export function ExerciseView(props: ExerciseViewProps) {
@@ -40,7 +44,21 @@ export function ExerciseView(props: ExerciseViewProps) {
     case 'dialogue':
       return <DialogueView {...props} exercise={ex} />;
     case 'reading':
+    case 'longReading':
+    case 'argument':
+    case 'dialogueAnalysis':
       return <ReadingView {...props} exercise={ex} />;
+    case 'keyword':
+      return <KeywordView {...props} exercise={ex} />;
+    case 'nuance':
+    case 'register':
+    case 'implicature':
+    case 'styleEdit':
+      return <InsightView {...props} exercise={ex} />;
+    case 'textOrder':
+      return <TextOrderView {...props} exercise={ex} />;
+    case 'writing':
+      return <WritingView {...props} exercise={ex} />;
     default:
       return <p>Format d'exercice inconnu.</p>;
   }
@@ -48,7 +66,7 @@ export function ExerciseView(props: ExerciseViewProps) {
 
 /** Exercices en plusieurs étapes : la validation est intégrée à l'exercice. */
 export function isSelfChecking(ex: Exercise): boolean {
-  return ex.type === 'matching' || ex.type === 'dialogue' || ex.type === 'reading';
+  return ex.type === 'matching' || ex.type === 'dialogue' || PASSAGE_TYPES.has(ex.type) || ex.type === 'writing';
 }
 
 export function exerciseHeader(ex: Exercise): { label: string; skill: string } {
@@ -75,7 +93,8 @@ function Diff({ ops }: { ops: DiffOp[] }) {
 export function FeedbackPanel({ exercise, result }: { exercise: Exercise; result: EvalResult }) {
   const tagText = errorExplanation(result.errorTag);
   const tagLabel = errorLabel(result.errorTag);
-  const multi = exercise.type === 'matching' || exercise.type === 'dialogue' || exercise.type === 'reading';
+  const multi = exercise.type === 'matching' || exercise.type === 'dialogue' || PASSAGE_TYPES.has(exercise.type) || exercise.type === 'writing' || exercise.type === 'textOrder';
+  const insight = INSIGHT_TYPES.has(exercise.type);
   const audioText = 'answerText' in exercise && typeof exercise.answerText === 'string' ? exercise.answerText : exercise.audioText;
   return (
     <div className={`feedback ${result.correct ? 'is-correct' : 'is-wrong'}`} role="status" aria-live="assertive">
@@ -102,7 +121,8 @@ export function FeedbackPanel({ exercise, result }: { exercise: Exercise; result
           {!result.correct && tagText && exercise.explanation && tagText !== exercise.explanation && <p className="muted small">{exercise.explanation}</p>}
         </div>
       </div>
-      {audioText && !multi && exercise.type !== 'listening' && (
+      {result.approximate && <p className="feedback-approx">Évaluation partielle{result.selfScore !== undefined ? ` · auto-évaluation : ${Math.round(result.selfScore * 100)} %` : ''}</p>}
+      {audioText && !multi && !insight && exercise.type !== 'listening' && (
         <div className="feedback-audio">
           <AudioButton text={audioText} label="Écouter la bonne réponse" />
         </div>

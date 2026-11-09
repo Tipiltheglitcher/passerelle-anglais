@@ -1,13 +1,13 @@
 /** Intégrité du contenu pédagogique : curriculum, leçons, vocabulaire. */
 import { describe, expect, it } from 'vitest';
-import { ALL_SKILLS, ALL_UNITS, COMM_SKILLS, GRAMMAR_SKILLS, GUIDED_ORDER, SKILL_BY_ID } from './curriculum';
+import { ALL_SKILLS, ALL_UNITS, GUIDED_ORDER, SKILL_BY_ID } from './curriculum';
 import { LESSONS } from './lessons';
 import { POS_LABELS, VOCAB_THEMES } from './vocabulary';
 import { ITEM_GENERATORS } from '@/engine/generator/registry';
 
 describe('curriculum', () => {
   it('prérequis existants, sans cycle, placés avant dans le parcours', () => {
-    for (const s of GRAMMAR_SKILLS) {
+    for (const s of ALL_SKILLS) {
       for (const p of s.prereq) {
         expect(SKILL_BY_ID[p], `${s.id} → ${p}`).toBeDefined();
         expect(GUIDED_ORDER.indexOf(p), `${p} doit précéder ${s.id}`).toBeLessThan(GUIDED_ORDER.indexOf(s.id));
@@ -16,7 +16,7 @@ describe('curriculum', () => {
   });
 
   it('chaque notion de grammaire a son générateur et appartient à une unité', () => {
-    for (const s of GRAMMAR_SKILLS) {
+    for (const s of ALL_SKILLS.filter((x) => x.kind === 'grammar')) {
       expect(ITEM_GENERATORS[s.id], s.id).toBeTypeOf('function');
       expect(ALL_UNITS.some((u) => u.skills.includes(s.id)), s.id).toBe(true);
     }
@@ -26,7 +26,7 @@ describe('curriculum', () => {
 
 describe('leçons', () => {
   it('une leçon complète pour chaque notion de grammaire et de communication', () => {
-    for (const s of [...GRAMMAR_SKILLS, ...COMM_SKILLS]) {
+    for (const s of ALL_SKILLS.filter((x) => x.kind !== 'vocab')) {
       const l = LESSONS[s.id];
       expect(l, s.id).toBeDefined();
       expect(l.intro.length, s.id).toBeGreaterThan(80);
@@ -65,7 +65,7 @@ describe('vocabulaire', () => {
         expect(it.en.every((w) => w.trim().length > 0), it.id).toBe(true);
         expect(it.fr.every((w) => w.trim().length > 0), it.id).toBe(true);
         expect(POS_LABELS[it.pos], `${it.id} : nature ${it.pos}`).toBeDefined();
-        expect(['A2', 'B1']).toContain(it.lv);
+        expect(['A2', 'B1', 'B2', 'C1', 'C2']).toContain(it.lv);
       }
     }
     expect(ids.size).toBeGreaterThan(500);

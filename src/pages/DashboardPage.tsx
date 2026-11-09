@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { Link, navigate } from '@/app/router';
 import { store, useAppState } from '@/state/store';
-import { estimateLevel, effectiveMastery, priority } from '@/engine/learning/mastery';
-import { nextGuidedSkill } from '@/engine/learning/planner';
+import { effectiveMastery, priority } from '@/engine/learning/mastery';
+import { EXAMS, nextGuidedSkill } from '@/engine/learning/planner';
+import { estimateProfile, readinessFor, unlockedStages } from '@/engine/learning/progression';
+import { DOMAINS, DOMAIN_LABELS, DOMAIN_DETAILS, STAGE_BY_ID } from '@/content/levels';
 import { SKILL_BY_ID } from '@/content/curriculum';
 import { dayKey, formatDuration, lastDays, liveStreak, shortDayLabel } from '@/state/dates';
 import { Badge, Button, Card, ProgressBar, ProgressRing, Stat } from '@/ui/kit';
@@ -26,8 +28,13 @@ import {
 export function DashboardPage() {
   const s = useAppState((st) => st);
   const now = Date.now();
-  const level = useMemo(() => estimateLevel(s.skills, now), [s.skills, now]);
-  const next = useMemo(() => nextGuidedSkill(s.skills, now), [s.skills, now]);
+  const level = useMemo(() => estimateProfile(s.skills, s.profile, now), [s.skills, s.profile, now]);
+  const unlocked = useMemo(() => unlockedStages(s.profile, s.skills, now), [s.profile, s.skills, now]);
+  const next = useMemo(() => nextGuidedSkill(s.skills, now, unlocked), [s.skills, now, unlocked]);
+  const stage = STAGE_BY_ID[level.stage];
+  const gateExam = EXAMS.find((e) => e.gate === stage.to);
+  const gatePassed = (s.profile.levelsPassed ?? []).includes(stage.to);
+  const readiness = useMemo(() => readinessFor(stage.to, s.skills, now), [stage.to, s.skills, now]);
   const nextDef = SKILL_BY_ID[next];
   const today = dayKey(now);
   const todayStat = s.daily[today];
@@ -89,7 +96,7 @@ export function DashboardPage() {
       <section className="hero card">
         <div className="hero-main">
           <p className="eyebrow">{isNew ? 'Bienvenue !' : 'Votre progression'}</p>
-          <h1>{isNew ? 'Passez du niveau A2 au niveau B1' : nextDef ? `Prochaine étape : ${nextDef.title}` : 'Continuez sur votre lancée'}</h1>
+          <h1>{isNew ? `Passez du niveau ${stage.from} au niveau ${stage.to}` : nextDef ? `Prochaine étape : ${nextDef.title}` : 'Continuez sur votre lancée'}</h1>
           <p className="page-subtitle">
             {isNew
               ? 'Des exercices générés à l\'infini, une révision espacée qui revient au bon moment, et un parcours qui s\'adapte à vos réussites comme à vos erreurs.'
@@ -112,20 +119,39 @@ export function DashboardPage() {
           </div>
         </div>
         <div className="hero-level">
-          <ProgressRing value={level.progress} size={168} stroke={13} label={`Progression vers B1 : ${Math.round(level.progress * 100)} %`}>
+          <ProgressRing value={level.progress} size={168} stroke={13} label={`Progression vers ${stage.to} : ${Math.round(level.progress * 100)} %`}>
             <div>
               <div className="ring-big">{level.label}</div>
               <div className="faint small">niveau estimé</div>
             </div>
           </ProgressRing>
           <div className="level-scale" aria-hidden>
-            <span>A2</span>
+            <span>{stage.from}</span>
             <ProgressBar value={level.progress} size="sm" tone="accent" />
-            <span>B1</span>
+            <span>{stage.to}</span>
           </div>
           <p className="small muted center">{level.description}</p>
         </div>
       </section>
+
+      {gateExam && !gatePassed && readiness.ready && (
+        <Card className="resume-card animate-rise">
+          <div className="row row-wrap">
+            <div className="resume-icon">
+              <IconGraduation size={22} aria-hidden />
+            </div>
+            <div className="spacer">
+              <strong>Vous êtes prêt pour l’évaluation de fin de niveau {stage.to}</strong>
+              <p className="muted small" style={{ margin: 0 }}>
+                Notions travaillées : {Math.round(readiness.coverage * 100)} % · maîtrise moyenne : {Math.round(readiness.mastery * 100)} %. Sa réussite valide le niveau et ouvre l’étape suivante.
+              </p>
+            </div>
+            <Button onClick={() => navigate(`/seance?mode=exam&exam=${gateExam.id}&t=${now}`)} iconRight={IconArrowRight}>
+              Passer l’évaluation
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-3">
         <Card className="goal-card">
@@ -201,6 +227,30 @@ export function DashboardPage() {
           <Stat icon={IconZap} tone="warning" label="XP au total" value={s.profile.totalXp} />
         </div>
       </Card>
+
+      {!isNew && (
+        <Card>
+          <div className="card-title">
+            <h2>Votre niveau par domaine</h2>
+            <Link to="/statistiques" className="small">
+              Détails
+            </Link>
+          </div>
+          <div className="domain-grid">
+            {DOMAINS.map((d) => {
+              const dv = level.domains[d];
+              return (
+                <div key={d} className="domain-cell">
+                  <span className="small muted">{DOMAIN_LABELS[d]}</span>
+                  <strong>{dv.label ?? '—'}</strong>
+                  <span className="faint">{dv.label ? DOMAIN_DETAILS[d] : 'Pas encore assez de résultats'}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="faint small" style={{ marginBottom: 0 }}>Estimation pédagogique, pas une certification CECRL. L’expression orale n’est pas évaluée.</p>
+        </Card>
+      )}
 
       <div className="grid grid-2">
         <Card>

@@ -11,6 +11,8 @@ import { irregularExercise, irregularMatching, vocabExercise, type SpecialContex
 import { listeningComprehension, readingExercise } from '@/engine/exercises/comprehension';
 import { dialogueExercise } from '@/engine/exercises/dialogues';
 import { AUDIO_TYPES, type Exercise, type ExerciseType } from '@/engine/exercises/types';
+import type { AdvancedContext } from '@/engine/exercises/advanced';
+import { grammarExtras, makeGrammarExtra, SPECIAL_ENGINES, SPECIAL_WEIGHTS } from './advancedSkills';
 
 export type Tier = 1 | 2 | 3;
 
@@ -36,10 +38,13 @@ export function tierFor(mastery: number): Tier {
 }
 
 const GRAMMAR_WEIGHTS: Record<Tier, Partial<Record<ExerciseType, number>>> = {
-  1: { mcq: 4, wordOrder: 3, translateEnFr: 2, listening: 1.2, contextChoice: 4, cloze: 1.2, conjugation: 0.8 },
-  2: { cloze: 3.5, conjugation: 2.5, errorCorrection: 2, mcq: 2, transformation: 1.5, wordOrder: 1.5, translateEnFr: 1.2, listening: 1, dictation: 0.8, contextChoice: 2 },
-  3: { translateFrEn: 3.5, cloze: 2.5, transformation: 2.5, errorCorrection: 2, dictation: 1.2, conjugation: 1.5, wordOrder: 1, contextChoice: 1, mcq: 0.6 },
+  1: { mcq: 4, wordOrder: 3, translateEnFr: 2, listening: 1.2, contextChoice: 4, cloze: 1.2, conjugation: 0.8, nuance: 1.5 },
+  2: { cloze: 3.5, conjugation: 2.5, errorCorrection: 2, mcq: 2, transformation: 1.5, wordOrder: 1.5, translateEnFr: 1.2, listening: 1, dictation: 0.8, contextChoice: 2, keyword: 1.2, nuance: 1.5 },
+  3: { translateFrEn: 3.5, cloze: 2.5, transformation: 2.5, errorCorrection: 2, dictation: 1.2, conjugation: 1.5, wordOrder: 1, contextChoice: 1, mcq: 0.6, keyword: 2.5, nuance: 0.8 },
 };
+
+/** Formats candidats pour un item de phrase (ordre stable). */
+const SENTENCE_CANDIDATES: ExerciseType[] = ['translateFrEn', 'cloze', 'transformation', 'errorCorrection', 'dictation', 'conjugation', 'wordOrder', 'contextChoice', 'mcq', 'translateEnFr', 'listening'];
 
 const VOCAB_WEIGHTS: Record<Tier, Partial<Record<ExerciseType, number>>> = {
   1: { matching: 3, mcq: 4, listening: 1.5, contextChoice: 1.5 },
@@ -65,7 +70,14 @@ export function makeExercise(skillId: string, sc: SelectContext, want: { type?: 
     const seed = `${sc.seed}#${skillId}#${attempt}`;
     const rng = createRng(seed);
     let ex: Exercise | null = null;
-    if (skillId === 'reading') ex = readingExercise(special(sc, seed, tier));
+    const adv: AdvancedContext = { rng: createRng(`${seed}/adv`), seed, difficulty: tier, weight: sc.lexWeight };
+    const engine = SPECIAL_ENGINES[skillId];
+    if (engine) {
+      const formats = engine.formats.filter(allowed);
+      if (!formats.length) return null;
+      const type = want.type && formats.includes(want.type) ? want.type : rng.pickWeighted(formats, (t) => (SPECIAL_WEIGHTS[t] ?? 1) * (t === sc.lastType ? 0.4 : 1));
+      ex = engine.make(adv, type);
+    } else if (skillId === 'reading') ex = readingExercise(special(sc, seed, tier));
     else if (skillId === 'listening') ex = sc.audio ? listeningComprehension(special(sc, seed, tier)) : null;
     else if (skillId === 'dialogues') ex = dialogueExercise(special(sc, seed, tier));
     else if (skillId.startsWith('vocab_')) {
@@ -79,15 +91,19 @@ export function makeExercise(skillId: string, sc: SelectContext, want: { type?: 
       const gen = ITEM_GENERATORS[skillId];
       if (!gen) return null;
       const ctx: GenContext = { rng, level: sc.level, difficulty: tier, lexWeight: sc.lexWeight };
-      const item = gen(ctx);
-      if (!item) continue;
-      const candidates = (Object.keys(GRAMMAR_WEIGHTS[3]) as ExerciseType[])
-        .concat(['mcq', 'wordOrder', 'translateEnFr', 'listening', 'contextChoice'])
-        .filter((t, i, arr) => arr.indexOf(t) === i)
-        .filter((t) => allowed(t) && canMake(item, t));
-      const type = want.type && candidates.includes(want.type) ? want.type : chooseType(rng, GRAMMAR_WEIGHTS[tier], candidates, sc.lastType);
-      if (!type) continue;
-      ex = itemToExercise(item, type, { rng: rng.fork('ex'), seed, difficulty: tier });
+      const extras = grammarExtras(skillId).filter(allowed);
+      // format complémentaire demandé explicitement : inutile de générer un item de phrase
+      if (want.type && extras.includes(want.type)) {
+        ex = makeGrammarExtra(skillId, want.type, ctx, adv);
+      } else {
+        const item = gen(ctx);
+        if (!item) continue;
+        const candidates = SENTENCE_CANDIDATES.filter((t) => allowed(t) && canMake(item, t));
+        const all = [...candidates, ...extras];
+        const type = want.type && candidates.includes(want.type) ? want.type : chooseType(rng, GRAMMAR_WEIGHTS[tier], all, sc.lastType);
+        if (!type) continue;
+        ex = extras.includes(type) && !candidates.includes(type) ? makeGrammarExtra(skillId, type, ctx, adv) : itemToExercise(item, type, { rng: rng.fork('ex'), seed, difficulty: tier });
+      }
     }
     if (!ex) continue;
     if (want.types && !want.types.includes(ex.type)) continue;

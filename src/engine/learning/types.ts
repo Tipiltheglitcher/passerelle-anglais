@@ -2,6 +2,7 @@
  * Modèle de données de la progression (persisté dans IndexedDB).
  */
 import type { Exercise, ExerciseType } from '@/engine/exercises/types';
+import type { CefrLevel } from '@/content/lexicon/types';
 
 export type CardState = 'new' | 'learning' | 'review' | 'relearning';
 
@@ -113,6 +114,24 @@ export interface Profile {
   totalXp: number;
   /** Défi quotidien terminé (date). */
   dailyDone?: string;
+  /** Niveaux validés par une évaluation de fin de niveau réussie. */
+  levelsPassed?: CefrLevel[];
+  /** Version du schéma de données (migrations). */
+  dataVersion?: number;
+}
+
+/** Production écrite conservée (rédaction guidée). */
+export interface WritingRecord {
+  id: string;
+  ts: number;
+  skillId: string;
+  title: string;
+  text: string;
+  words: number;
+  /** Score des vérifications automatiques (0–1). */
+  autoScore: number;
+  /** Auto-évaluation déclarée (0–1). */
+  selfScore?: number;
 }
 
 export type ThemePref = 'system' | 'light' | 'dark';

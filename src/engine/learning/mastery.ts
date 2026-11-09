@@ -4,6 +4,7 @@
 import { ALL_SKILLS, GRAMMAR_SKILLS, SKILL_BY_ID } from '@/content/curriculum';
 import { cardRetrievability } from './fsrs';
 import { newSkillState, type SkillState } from './types';
+import type { StageId } from '@/content/levels';
 
 export interface AttemptInput {
   correct: boolean;
@@ -51,9 +52,14 @@ export function effectiveMastery(s: SkillState | undefined, now: number): number
 
 export type SkillStatus = 'locked' | 'available' | 'learning' | 'mastered' | 'review';
 
-export function skillStatus(id: string, skills: Record<string, SkillState>, now: number): SkillStatus {
+/**
+ * Statut d'une compétence. Si les étapes ouvertes sont fournies, une compétence
+ * d'une étape fermée (jamais travaillée) est verrouillée.
+ */
+export function skillStatus(id: string, skills: Record<string, SkillState>, now: number, unlocked?: ReadonlySet<StageId>): SkillStatus {
   const s = skills[id];
   const def = SKILL_BY_ID[id];
+  if (def && unlocked && !unlocked.has(def.stage) && !(s && s.attempts > 0)) return 'locked';
   const eff = effectiveMastery(s, now);
   if (s && s.attempts > 0) {
     if (s.card && s.card.reps > 0 && s.card.due <= now && eff < 0.85) return 'review';

@@ -4,9 +4,10 @@
  */
 
 export const DB_NAME = 'passerelle';
-export const DB_VERSION = 1;
+/** v2 : magasin « writings » (productions écrites des niveaux B2 → C2). */
+export const DB_VERSION = 2;
 
-export type StoreName = 'settings' | 'profile' | 'skills' | 'items' | 'attempts' | 'sessions' | 'daily' | 'mistakes' | 'exposure' | 'meta';
+export type StoreName = 'settings' | 'profile' | 'skills' | 'items' | 'attempts' | 'sessions' | 'daily' | 'mistakes' | 'exposure' | 'meta' | 'writings';
 
 export const STORES: { name: StoreName; keyPath: string; autoIncrement?: boolean; indexes?: string[] }[] = [
   { name: 'settings', keyPath: 'id' },
@@ -19,6 +20,7 @@ export const STORES: { name: StoreName; keyPath: string; autoIncrement?: boolean
   { name: 'mistakes', keyPath: 'id' },
   { name: 'exposure', keyPath: 'key' },
   { name: 'meta', keyPath: 'id' },
+  { name: 'writings', keyPath: 'id', indexes: ['ts'] },
 ];
 
 export interface Backend {

@@ -7,7 +7,8 @@
  */
 import type { AnswerSpec, Lattice, Slot } from '@/engine/core/lattice';
 import type { Rng } from '@/engine/core/rng';
-import type { Level } from '@/content/lexicon/types';
+import type { CefrLevel, Level } from '@/content/lexicon/types';
+import type { ExerciseType } from '@/engine/exercises/types';
 
 export interface GenContext {
   rng: Rng;
@@ -46,7 +47,7 @@ export interface SentenceItem {
   skillId: string;
   /** Identifiant de structure (pour les statistiques d'exposition). */
   templateId: string;
-  level: Level;
+  level: CefrLevel;
   /** Phrase complète, cases annotées (slot.blank = indice du trou). */
   slots: Slot[];
   end: '.' | '?' | '!';
@@ -78,6 +79,11 @@ export interface SentenceItem {
   noFinalContraction?: boolean;
   /** Trou sans réponse écrite possible (article zéro) : uniquement en QCM. */
   mcqOnly?: boolean;
+  /**
+   * Formats autorisés (items rédigés à la main) : on n'autorise une traduction
+   * libre ou un ordre des mots que si toutes les réponses correctes sont prévues.
+   */
+  allowedTypes?: ExerciseType[];
 }
 
 /** Libellé affiché pour l'absence d'article. */

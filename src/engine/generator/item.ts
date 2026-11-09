@@ -13,7 +13,8 @@ import {
   type Slot,
 } from '@/engine/core/lattice';
 import { normalizeText } from '@/engine/core/text';
-import type { Level } from '@/content/lexicon/types';
+import type { CefrLevel } from '@/content/lexicon/types';
+import type { ExerciseType } from '@/engine/exercises/types';
 import { realizeEn, realizeFr, type Clause, type RealizeOptions } from './clause';
 import type { Blank, Distractor, SentenceItem, TransformSpec } from './types';
 import { lexemesOf } from './pick';
@@ -30,7 +31,7 @@ export function setRejectListener(fn: RejectListener | null): void {
 export interface BuildArgs {
   skillId: string;
   templateId: string;
-  level: Level;
+  level: CefrLevel;
   slots: Slot[];
   end: '.' | '?' | '!';
   altOrders?: Slot[][];
@@ -51,6 +52,7 @@ export interface BuildArgs {
   itemIds?: string[];
   noFinalContraction?: boolean;
   mcqOnly?: boolean;
+  allowedTypes?: ExerciseType[];
 }
 
 /** Indices des cases dont le rôle figure dans la liste. */
@@ -135,6 +137,7 @@ export function buildItem(a: BuildArgs): SentenceItem | null {
     itemIds: a.itemIds,
     noFinalContraction: a.noFinalContraction,
     mcqOnly: a.mcqOnly,
+    allowedTypes: a.allowedTypes,
   };
   const problems = validateItem(item);
   if (problems.length) {
@@ -151,7 +154,7 @@ export function sentenceText(slots: readonly Slot[], end: '.' | '?' | '!'): stri
 export interface ClauseItemArgs {
   skillId: string;
   templateId: string;
-  level: Level;
+  level: CefrLevel;
   clause: Clause;
   /** Rôles composant chaque trou ; chaque entrée = un trou. */
   blankRoles: string[][];

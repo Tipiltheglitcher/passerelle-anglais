@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Link, navigate } from '@/app/router';
 import { store, useAppState } from '@/state/store';
 import { SKILL_BY_ID, UNIT_BY_ID } from '@/content/curriculum';
+import { DOMAIN_LABELS, STAGE_BY_ID, levelTone } from '@/content/levels';
 import { lessonFor, type LessonBlock } from '@/content/lessons';
 import { ERROR_TAGS } from '@/engine/generator/errors';
 import { effectiveMastery, skillStatus } from '@/engine/learning/mastery';
@@ -94,6 +95,7 @@ function GrammarLesson({ skillId }: { skillId: string }) {
   const def = SKILL_BY_ID[skillId];
   const lesson = lessonFor(skillId);
   const skills = useAppState((s) => s.skills);
+  const profile = useAppState((s) => s.profile);
   const audio = useAppState((s) => s.audioSupported && s.settings.audio.enabled);
   const now = Date.now();
 
@@ -112,7 +114,10 @@ function GrammarLesson({ skillId }: { skillId: string }) {
   }
 
   const st = skills[skillId];
-  const status = skillStatus(skillId, skills, now);
+  void profile;
+  const unlocked = store.unlocked(now);
+  const stageOpen = unlocked.has(def.stage);
+  const status = skillStatus(skillId, skills, now, unlocked);
   const mastery = effectiveMastery(st, now);
   const unit = UNIT_BY_ID[def.unit];
   const formats = formatsFor(skillId).filter((t) => audio || !AUDIO_TYPES.has(t));
@@ -122,8 +127,9 @@ function GrammarLesson({ skillId }: { skillId: string }) {
     .slice(0, 3);
   const accuracy = st && st.attempts ? st.correct / st.attempts : null;
   const isComm = def.kind === 'function';
+  const isWriting = !!def.selfAssessed;
   const blocked = skillId === 'listening' && !audio;
-  const startGuided = () => navigate(isComm ? `/seance?mode=practice&skills=${skillId}&size=6&t=${Date.now()}` : `/seance?mode=guided&skills=${skillId}&t=${Date.now()}`);
+  const startGuided = () => navigate(isComm ? `/seance?mode=practice&skills=${skillId}&size=${isWriting ? 1 : 6}&t=${Date.now()}` : `/seance?mode=guided&skills=${skillId}&t=${Date.now()}`);
 
   return (
     <div className="lesson">
@@ -137,8 +143,14 @@ function GrammarLesson({ skillId }: { skillId: string }) {
           <span className="lesson-en-title" lang="en">
             {def.en}
           </span>
-          <Badge tone={def.level === 'B1' ? 'accent' : 'primary'}>{def.level}</Badge>
-          {status === 'locked' && (
+          <Badge tone={levelTone(def.level)}>{def.level}</Badge>
+          <Badge>{DOMAIN_LABELS[def.domain]}</Badge>
+          {!stageOpen && (
+            <Badge>
+              <IconLock size={12} aria-hidden /> étape {STAGE_BY_ID[def.stage].title} à ouvrir
+            </Badge>
+          )}
+          {stageOpen && status === 'locked' && (
             <Badge>
               <IconLock size={12} aria-hidden /> prérequis à consolider
             </Badge>
@@ -214,12 +226,14 @@ function GrammarLesson({ skillId }: { skillId: string }) {
         <aside className="lesson-side">
           <Card className="lesson-cta">
             <h2>S'entraîner</h2>
-            <p className="small muted">{isComm ? 'Six exercices de ce type, adaptés à votre niveau.' : 'Une séance centrée sur cette notion, avec quelques révisions intercalées.'}</p>
+            <p className="small muted">{isWriting ? 'Une rédaction guidée : vérifications automatiques, modèle et auto-évaluation.' : isComm ? 'Quelques exercices de ce type, adaptés à votre niveau.' : 'Une séance centrée sur cette notion, avec quelques révisions intercalées.'}</p>
+            {!stageOpen && <p className="small muted">Cette étape n’est pas encore ouverte dans le parcours guidé, mais vous pouvez déjà vous entraîner librement.</p>}
+            {isWriting && <p className="small warning-text">Évaluation partielle : la qualité d’ensemble d’un texte libre ne peut pas être mesurée automatiquement de façon fiable.</p>}
             {blocked && <p className="small warning-text">La synthèse vocale est indisponible ou désactivée (voir Paramètres).</p>}
             <Button block size="lg" icon={IconPlay} onClick={startGuided} disabled={blocked}>
               {st?.attempts ? 'Continuer' : 'Commencer'}
             </Button>
-            {!isComm && formats.length > 0 && (
+            {(!isComm || formats.length > 1) && !isWriting && formats.length > 0 && (
               <>
                 <p className="small faint lesson-formats-label">Ou un seul format :</p>
                 <div className="chips">

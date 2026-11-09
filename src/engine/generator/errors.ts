@@ -4,6 +4,8 @@
  * écrit une forme erronée connue, l'explication ciblée correspondante s'affiche
  * et l'erreur est comptabilisée dans ses « difficultés principales ».
  */
+import { ADVANCED_ERROR_TAGS } from './errors-advanced';
+
 export interface ErrorTagInfo {
   label: string;
   explanation: string;
@@ -350,6 +352,7 @@ export const ERROR_TAGS: Record<string, ErrorTagInfo> = {
     label: 'Sens',
     explanation: 'Cette réponse ne correspond pas au sens de la phrase ou du texte.',
   },
+  ...ADVANCED_ERROR_TAGS,
 };
 
 export function errorInfo(tag: string | undefined): ErrorTagInfo | undefined {

@@ -10,7 +10,8 @@ import { makeExercise } from '@/engine/learning/select';
 import { vocabExercise } from '@/engine/exercises/vocab';
 import { evaluate } from '@/engine/exercises/evaluate';
 import { createRng } from '@/engine/core/rng';
-import type { Exercise, ExerciseResponse, ExerciseType, MatchingExercise } from '@/engine/exercises/types';
+import type { Exercise, ExerciseResponse, ExerciseType, InsightExercise, MatchingExercise, TextOrderExercise, WritingExercise } from '@/engine/exercises/types';
+import { SPECIAL_ENGINES } from '@/engine/learning/advancedSkills';
 
 function make(type: ExerciseType, skill = 'present_simple'): Exercise {
   for (let i = 0; i < 40; i++) {
@@ -149,5 +150,63 @@ describe('retour après vérification', () => {
     expect(screen.getByRole('status')).toHaveTextContent(res.headline);
     expect(screen.getByText('Réponse attendue :')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(ex.explanation.slice(0, 20));
+  });
+});
+
+describe('formats avancés', () => {
+  const adv = (seed: string) => ({ rng: createRng(seed), seed, difficulty: 2 as const });
+
+  it('choix commenté : sélection, puis explication de chaque option après vérification', async () => {
+    const ex = SPECIAL_ENGINES.register_b2.make(adv('ui-reg'), 'register') as InsightExercise;
+    const { last, user } = setup(ex);
+    const good = ex.options.findIndex((o) => o.correct);
+    await user.click(screen.getAllByRole('radio')[good]);
+    expect(last()).toEqual({ kind: 'choice', index: good });
+    expect(evaluate(ex, last()!).correct).toBe(true);
+    render(<ExerciseView exercise={ex} phase="checked" result={evaluate(ex, last()!)} onChange={() => {}} onSubmit={() => {}} />);
+    for (const o of ex.options) expect(screen.getAllByText(o.why).length).toBeGreaterThan(0);
+  });
+
+  it('reformulation avec mot imposé : saisie, compteur de mots, Entrée', async () => {
+    const ex = makeExercise('modals_past', { seed: 'ui-kw', level: 'B1', audio: false }, { type: 'keyword' });
+    if (ex?.type !== 'keyword') unexpected();
+    const { last, onSubmit, user } = setup(ex);
+    const input = screen.getByLabelText('Mots manquants');
+    await waitFor(() => expect(input).toHaveFocus());
+    await user.type(input, ex.answerText);
+    expect(screen.getByText(/mots? \(attendu/)).toBeInTheDocument();
+    await user.keyboard('{Enter}');
+    expect(onSubmit).toHaveBeenCalled();
+    expect(evaluate(ex, last()!).correct).toBe(true);
+  });
+
+  it('organisation du texte : les boutons déplacent les parties', async () => {
+    const ex = SPECIAL_ENGINES.argument_b2.make(adv('ui-order'), 'textOrder') as TextOrderExercise;
+    const { last, user } = setup(ex);
+    expect(last()).toEqual({ kind: 'sequence', ids: ex.segments.map((s) => s.id) });
+    await user.click(screen.getAllByRole('button', { name: 'Descendre' })[0]);
+    const ids = (last() as { ids: string[] }).ids;
+    expect(ids[1]).toBe(ex.segments[0].id);
+    expect(ids[0]).toBe(ex.segments[1].id);
+  });
+
+  it('rédaction : rédiger, analyser, s’auto-évaluer, valider', async () => {
+    const ex = SPECIAL_ENGINES.writing_b2.make(adv('ui-w'), 'writing') as WritingExercise;
+    const { last, onSubmit, user } = setup(ex);
+    const area = screen.getByLabelText('Votre texte en anglais');
+    await user.click(area);
+    await user.paste(ex.model);
+    await user.click(screen.getByRole('button', { name: 'Analyser mon texte' }));
+    expect(screen.getByText('Vérifications automatiques')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Complétez l’auto-évaluation' })).toBeDisabled();
+    for (const group of screen.getAllByRole('radiogroup')) await user.click(within(group).getByRole('radio', { name: 'Oui' }));
+    await user.click(screen.getByRole('button', { name: 'Valider' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const r = last();
+    expect(r?.kind).toBe('writing');
+    const res = evaluate(ex, r!);
+    expect(res.correct).toBe(true);
+    expect(res.approximate).toBe(true);
+    expect(res.selfScore).toBe(1);
   });
 });

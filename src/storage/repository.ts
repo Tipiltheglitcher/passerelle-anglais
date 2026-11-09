@@ -12,7 +12,9 @@ import type {
   SessionRecord,
   Settings,
   SkillState,
+  WritingRecord,
 } from '@/engine/learning/types';
+import type { CefrLevel } from '@/content/lexicon/types';
 import { DEFAULT_SETTINGS } from '@/engine/learning/types';
 import type { Backend, StoreName } from './db';
 
@@ -26,10 +28,27 @@ export interface LoadedData {
   mistakes: MistakeRecord[];
   exposure: Record<string, ExposureRecord>;
   activeSession: unknown | null;
+  writings: WritingRecord[];
+  /** Le profil a été migré vers le schéma courant (à réenregistrer). */
+  migrated: boolean;
+}
+
+/** Version courante du schéma des données de progression. */
+export const DATA_VERSION = 2;
+
+/**
+ * Migration des données d'une version antérieure. v1 → v2 : les niveaux
+ * validés par une évaluation de fin de niveau sont retrouvés dans
+ * l'historique des séances (une réussite à l'examen blanc 4 valide le B1).
+ */
+export function migrateProfile(profile: Profile, sessions: SessionRecord[], passedFromHistory: (s: SessionRecord[]) => CefrLevel[]): { profile: Profile; migrated: boolean } {
+  if ((profile.dataVersion ?? 1) >= DATA_VERSION && Array.isArray(profile.levelsPassed)) return { profile, migrated: false };
+  const levels = new Set<CefrLevel>([...(profile.levelsPassed ?? []), ...passedFromHistory(sessions)]);
+  return { profile: { ...profile, levelsPassed: [...levels], dataVersion: DATA_VERSION }, migrated: true };
 }
 
 export function defaultProfile(now: number): Profile {
-  return { id: 'me', createdAt: now, placementDone: false, streak: 0, bestStreak: 0, totalXp: 0 };
+  return { id: 'me', createdAt: now, placementDone: false, streak: 0, bestStreak: 0, totalXp: 0, levelsPassed: [], dataVersion: DATA_VERSION };
 }
 
 /** Fusionne les réglages enregistrés avec les valeurs par défaut (robustesse aux anciennes versions). */
@@ -55,8 +74,8 @@ export function sanitizeSettings(raw: unknown): Settings {
   };
 }
 
-export async function loadAll(b: Backend, now: number): Promise<LoadedData> {
-  const [settings, profile, skills, items, sessions, daily, mistakes, exposure, active] = await Promise.all([
+export async function loadAll(b: Backend, now: number, passedFromHistory: (s: SessionRecord[]) => CefrLevel[] = () => []): Promise<LoadedData> {
+  const [settings, profile, skills, items, sessions, daily, mistakes, exposure, active, writings] = await Promise.all([
     b.get<Settings>('settings', 'settings'),
     b.get<Profile>('profile', 'me'),
     b.getAll<SkillState>('skills'),
@@ -66,10 +85,14 @@ export async function loadAll(b: Backend, now: number): Promise<LoadedData> {
     b.getAll<MistakeRecord>('mistakes'),
     b.getAll<ExposureRecord>('exposure'),
     b.get<{ id: string; session: unknown }>('meta', 'active'),
+    b.getLatest<WritingRecord>('writings', 'ts', 100).catch(() => [] as WritingRecord[]),
   ]);
+  const mig = migrateProfile(profile ?? defaultProfile(now), sessions, passedFromHistory);
   return {
     settings: sanitizeSettings(settings),
-    profile: profile ?? defaultProfile(now),
+    profile: mig.profile,
+    migrated: mig.migrated,
+    writings: writings.filter((w) => w && typeof w.text === 'string'),
     skills: Object.fromEntries(skills.filter((s) => s && typeof s.id === 'string').map((s) => [s.id, { ...s, errors: s.errors ?? {} }])),
     items: Object.fromEntries(items.filter((i) => i && typeof i.id === 'string' && i.card).map((i) => [i.id, i])),
     sessions,
@@ -88,9 +111,10 @@ export async function recentAttempts(b: Backend, n = 2000): Promise<AttemptRecor
 // Export / import
 
 export const EXPORT_APP = 'passerelle';
-export const EXPORT_VERSION = 1;
+/** v2 : ajout des productions écrites ; les sauvegardes v1 restent importables. */
+export const EXPORT_VERSION = 2;
 
-const ALL_STORES: StoreName[] = ['settings', 'profile', 'skills', 'items', 'attempts', 'sessions', 'daily', 'mistakes', 'exposure'];
+const ALL_STORES: StoreName[] = ['settings', 'profile', 'skills', 'items', 'attempts', 'sessions', 'daily', 'mistakes', 'exposure', 'writings'];
 
 export interface ExportFile {
   app: typeof EXPORT_APP;

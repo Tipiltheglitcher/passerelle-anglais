@@ -1,6 +1,10 @@
 import type { FrDet, FrGender } from '@/engine/lang/fr/morphology';
 
+/** Niveau du lexique de base utilisé par les générateurs compositionnels. */
 export type Level = 'A2' | 'B1';
+
+/** Niveau CECRL d'un contenu (compétence, exercice, mot). */
+export type CefrLevel = 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 
 /** Déterminant anglais demandé pour un complément d'objet. */
 export type EnDet = 'a' | 'the' | 'poss' | 'none' | 'gen' | 'this';

@@ -31,6 +31,15 @@ import {
   IconWarning,
   IconZap,
   IconCoffee,
+  IconFeather,
+  IconQuote,
+  IconMountain,
+  IconDrama,
+  IconTelescope,
+  IconScroll,
+  IconGlasses,
+  IconLandmark,
+  IconPenTool,
 } from './icons';
 
 type Icon = ComponentType<{ size?: number; 'aria-hidden'?: boolean; className?: string }>;
@@ -67,6 +76,15 @@ const MAP: Record<string, Icon> = {
   alert: IconWarning,
   leaf: IconLeaf,
   coffee: IconCoffee,
+  feather: IconFeather,
+  quote: IconQuote,
+  mountain: IconMountain,
+  drama: IconDrama,
+  telescope: IconTelescope,
+  scroll: IconScroll,
+  glasses: IconGlasses,
+  landmark: IconLandmark,
+  pen: IconPenTool,
 };
 
 export function symbol(name: string): Icon {
