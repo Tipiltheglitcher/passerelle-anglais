@@ -1,0 +1,17 @@
+# API Passerelle : Cloudflare Workers + D1 (forfait gratuit).
+# Aucune donnée secrète ici : l'identifiant de base D1 et l'adresse du site ne sont pas confidentiels.
+name = "passerelle-api"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+workers_dev = true
+
+[vars]
+# Origines autorisées à appeler l'API depuis un navigateur (séparées par des virgules).
+ALLOWED_ORIGINS = "https://tipiltheglitcher.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "passerelle"
+# Remplacé par l'identifiant affiché par « npx wrangler d1 create passerelle ».
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

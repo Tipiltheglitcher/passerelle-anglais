@@ -598,6 +598,13 @@ export class Store {
     return JSON.stringify(await exportAll(this.backend), null, 1);
   }
 
+  /** Instantané compact de la progression (synchronisation du compte). */
+  async exportSnapshot(attemptsLimit = 2000): Promise<string> {
+    await this.flush();
+    if (!this.backend) throw new Error('Stockage indisponible');
+    return JSON.stringify(await exportAll(this.backend, { attemptsLimit }));
+  }
+
   async importData(text: string): Promise<void> {
     let parsed: unknown;
     try {

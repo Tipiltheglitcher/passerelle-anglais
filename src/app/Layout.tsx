@@ -7,8 +7,10 @@ import { Link, useRoute } from './router';
 import { useAppState, store } from '@/state/store';
 import { resolveTheme } from './theme';
 import { dayKey, liveStreak } from '@/state/dates';
-import { IconBook, IconFlame, IconHome, IconMoon, IconPath, IconPractice, IconSettings, IconStats, IconSun, IconZap } from '@/ui/icons';
+import { IconBook, IconFlame, IconHome, IconMoon, IconPath, IconPractice, IconSettings, IconStats, IconSun, IconTrophy, IconZap } from '@/ui/icons';
 import { IconButton } from '@/ui/kit';
+import { apiAvailable } from '@/account/api';
+import { AccountChip, SyncConflictModal } from '@/account/ui';
 
 const NAV = [
   { to: '/', label: 'Accueil', short: 'Accueil', icon: IconHome, match: (p: string) => p === '/' },
@@ -16,6 +18,8 @@ const NAV = [
   { to: '/entrainement', label: "S'entraîner", short: 'Exercices', icon: IconPractice, match: (p: string) => p.startsWith('/entrainement') },
   { to: '/vocabulaire', label: 'Vocabulaire', short: 'Mots', icon: IconBook, match: (p: string) => p.startsWith('/vocabulaire') },
   { to: '/statistiques', label: 'Statistiques', short: 'Stats', icon: IconStats, match: (p: string) => p.startsWith('/statistiques') },
+  // le classement n'existe que si l'API des comptes est configurée
+  ...(apiAvailable() ? [{ to: '/classement', label: 'Classement', short: 'Classement', icon: IconTrophy, match: (p: string) => p.startsWith('/classement') }] : []),
   { to: '/parametres', label: 'Réglages', short: 'Réglages', icon: IconSettings, match: (p: string) => p.startsWith('/parametres') },
 ];
 
@@ -101,6 +105,7 @@ export function Layout({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="side-footer">
+          <AccountChip />
           <HeaderStats />
           <ThemeToggle />
         </div>
@@ -111,6 +116,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="topbar-right">
             <HeaderStats />
             <ThemeToggle />
+            <AccountChip compact />
           </div>
         </header>
         {storage === 'memory' && (
@@ -122,7 +128,8 @@ export function Layout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-      <nav className="tabbar" aria-label="Navigation">
+      <SyncConflictModal />
+      <nav className="tabbar" aria-label="Navigation" style={{ gridTemplateColumns: `repeat(${NAV.length}, 1fr)` }}>
         {NAV.map((n) => (
           <Link key={n.to} to={n.to} className={`tab-link${n.match(route.path) ? ' is-active' : ''}`} aria-current={n.match(route.path) ? 'page' : undefined}>
             <n.icon size={22} aria-hidden />

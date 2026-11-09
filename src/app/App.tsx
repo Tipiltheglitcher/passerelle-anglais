@@ -14,6 +14,9 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { SessionPage } from '@/pages/SessionPage';
 import { PlacementPage } from '@/pages/PlacementPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { AccountPage } from '@/pages/AccountPage';
+import { LeaderboardPage } from '@/pages/LeaderboardPage';
+import { account } from '@/account/instance';
 
 export function App() {
   const status = useAppState((s) => s.status);
@@ -33,6 +36,11 @@ export function App() {
   }, [theme]);
 
   useEffect(() => applyMotion(motion), [motion]);
+
+  // compte : vérification de la session et synchronisation, une fois la progression locale chargée
+  useEffect(() => {
+    if (status === 'ready') account.start();
+  }, [status]);
 
   // remonte en haut de page à chaque changement d'écran
   useEffect(() => {
@@ -74,6 +82,8 @@ export function App() {
   else if (route.path === '/statistiques') page = <StatsPage />;
   else if (route.path === '/parametres') page = <SettingsPage />;
   else if (route.path === '/test-niveau') page = <PlacementPage />;
+  else if (route.path === '/compte') page = <AccountPage />;
+  else if (route.path === '/classement') page = <LeaderboardPage />;
   else page = <NotFoundPage />;
 
   return <Layout>{page}</Layout>;

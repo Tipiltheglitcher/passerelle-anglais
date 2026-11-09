@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { store, useAppState } from '@/state/store';
+import { useAccount } from '@/account/instance';
 import { englishVoices, onVoicesChanged, speak, stopSpeaking } from '@/audio/tts';
 import { resolveTheme } from '@/app/theme';
 import { SESSION_SIZES, type Settings } from '@/engine/learning/types';
@@ -208,6 +209,7 @@ function AudioSection({ settings, setAudio }: { settings: Settings; setAudio: (p
 
 function DataSection() {
   const storage = useAppState((s) => s.storage);
+  const signedIn = useAccount((s) => !!s.user);
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ name: string; text: string } | null>(null);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
@@ -282,7 +284,10 @@ function DataSection() {
           <p>Le stockage du navigateur est indisponible (navigation privée ?) : votre progression sera perdue à la fermeture de l'onglet. Exportez-la pour la conserver.</p>
         </div>
       ) : (
-        <p className="muted small">Votre progression est enregistrée dans ce navigateur (IndexedDB). Exportez-la régulièrement pour la sauvegarder ou la transférer sur un autre appareil.</p>
+        <p className="muted small">
+          Votre progression est enregistrée dans ce navigateur (IndexedDB).{' '}
+          {signedIn ? 'Elle est aussi synchronisée avec votre compte.' : 'Exportez-la régulièrement pour la sauvegarder, ou créez un compte pour la retrouver sur vos autres appareils.'}
+        </p>
       )}
       <div className="row row-wrap">
         <Button variant="secondary" icon={IconDownload} onClick={() => void doExport()}>
@@ -349,6 +354,12 @@ function DataSection() {
         }
       >
         <p>Progression, statistiques, erreurs enregistrées, révisions et réglages seront définitivement supprimés de ce navigateur.</p>
+        {signedIn && (
+          <p className="notice notice-warning">
+            <IconWarning size={18} aria-hidden />
+            <span>Vous êtes connecté : la progression vide sera ensuite synchronisée et remplacera celle de votre compte. Pour seulement retirer vos données de cet appareil, déconnectez-vous depuis la page Compte.</span>
+          </p>
+        )}
         <p className="muted small">Conseil : exportez d'abord votre progression si vous souhaitez pouvoir la restaurer.</p>
         <label className="check-row">
           <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />

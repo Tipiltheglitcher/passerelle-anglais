@@ -123,9 +123,13 @@ export interface ExportFile {
   data: Record<string, unknown[]>;
 }
 
-export async function exportAll(b: Backend): Promise<ExportFile> {
+/**
+ * Export complet. `attemptsLimit` restreint l'historique détaillé des réponses
+ * aux plus récentes (instantané de synchronisation, de taille bornée).
+ */
+export async function exportAll(b: Backend, o: { attemptsLimit?: number } = {}): Promise<ExportFile> {
   const data: Record<string, unknown[]> = {};
-  for (const s of ALL_STORES) data[s] = await b.getAll(s);
+  for (const s of ALL_STORES) data[s] = s === 'attempts' && o.attemptsLimit ? await b.getLatest('attempts', 'ts', o.attemptsLimit) : await b.getAll(s);
   return { app: EXPORT_APP, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), data };
 }
 

@@ -31,7 +31,101 @@ npm run check     # typage + lint + tests + build
 
 ## Déploiement (GitHub Pages)
 
-Chaque push sur `main` lance `.github/workflows/deploy.yml` : installation, `npm run check`, build avec `BASE_PATH=/<nom du dépôt>/`, puis publication sur GitHub Pages. Dans les réglages du dépôt, **Settings → Pages → Source** doit être sur **GitHub Actions**. La navigation utilise des URL en `#/…`, donc les liens directs et le rafraîchissement fonctionnent sans configuration serveur. Chaque visiteur garde sa propre progression dans son navigateur : rien n'est envoyé au site.
+Chaque push sur `main` lance `.github/workflows/deploy.yml` : installation, `npm run check`, build avec `BASE_PATH=/<nom du dépôt>/`, puis publication sur GitHub Pages. Dans les réglages du dépôt, **Settings → Pages → Source** doit être sur **GitHub Actions**. La navigation utilise des URL en `#/…`, donc les liens directs et le rafraîchissement fonctionnent sans configuration serveur. Chaque visiteur garde sa propre progression dans son navigateur ; rien n'est envoyé ailleurs, sauf s'il crée un compte (voir ci-dessous).
+
+## Comptes et classement (facultatif)
+
+Un compte permet de retrouver sa progression sur plusieurs appareils et de se comparer à ses amis. Il ne demande qu'un **pseudo** et un **mot de passe** : pas d'email, pas de connexion Google. Sans compte, l'application fonctionne exactement comme avant.
+
+Ces fonctions n'apparaissent que si l'adresse de l'API est fournie au build (`VITE_API_URL`). Sans elle, il n'y a ni page Compte ni Classement, et aucun bouton inactif.
+
+### Architecture
+
+- **API** : un Cloudflare Worker (`worker/`) et une base Cloudflare D1. Les deux restent dans le forfait gratuit ; il n'y a ni serveur permanent ni abonnement.
+- **Tables** (`worker/migrations/0001_init.sql`) :
+  - `users` : comptes ;
+  - `auth_sessions` : sessions de connexion ;
+  - `progress` : progression synchronisée ;
+  - `scores` : séances comptées au classement ;
+  - `attempts` : limitation des tentatives.
+- **Frontend** : il reste sur GitHub Pages. IndexedDB reste la source locale : `src/account/` ajoute la connexion et la synchronisation par-dessus le store existant, sans toucher au moteur pédagogique.
+
+### Sécurité
+
+- **Mot de passe** :
+  - le navigateur le transforme en clé avec PBKDF2-SHA256 (600 000 itérations), et seule cette clé est envoyée ;
+  - le serveur la hache à nouveau avec PBKDF2-SHA256 et un sel aléatoire propre au compte ;
+  - le mot de passe n'est donc jamais transmis ni stocké en clair.
+  
+  Ce découpage tient compte de la limite de temps de calcul du forfait gratuit de Workers.
+- **Sessions** :
+  - un jeton aléatoire de 256 bits, conservé côté serveur sous forme hachée (SHA-256) ;
+  - il expire après 90 jours sans utilisation et est supprimé à la déconnexion ;
+  - il est envoyé dans l'en-tête `Authorization`, sans cookie.
+- **Limitation des tentatives** :
+  - 5 échecs de connexion par pseudo et 30 par adresse IP sur 15 minutes ;
+  - 5 inscriptions par adresse IP et par heure ;
+  - les adresses IP ne sont conservées que sous forme hachée, au plus 24 heures.
+- **CORS** : seule l'origine du site (`ALLOWED_ORIGINS` dans `worker/wrangler.toml`) peut appeler l'API depuis un navigateur.
+- **Validation** : toutes les données reçues sont vérifiées par le serveur (pseudo, formats, tailles, résumé de progression, séances).
+- **Suppression du compte** : définitive, sur confirmation par mot de passe. Elle efface le compte, les sessions, la progression et les scores.
+- **Aucun secret** dans le dépôt : l'identifiant de base D1 et l'adresse de l'API ne sont pas confidentiels.
+
+### Synchronisation
+
+Synchronisé : niveau estimé, maîtrise des notions, vocabulaire, révisions espacées, statistiques, XP, séances, erreurs, rédactions et réglages. C'est le même contenu que l'export, limité aux 2 000 dernières réponses détaillées et compressé.
+
+- **Quand** : après chaque séance, puis au plus toutes les 5 minutes s'il reste des changements, et quand l'onglet passe en arrière-plan. Hors ligne, les progrès restent sur l'appareil et partent au retour de la connexion.
+- **Versions** : chaque envoi porte un numéro de version, et le serveur refuse d'écraser une version plus récente.
+- **Choix demandés à l'utilisateur** (avec le détail des XP, du nombre d'exercices et de la date de dernière séance de chaque côté) :
+  - à la première connexion avec une progression locale ;
+  - à la connexion sur un appareil qui contient déjà une progression ;
+  - quand deux appareils ont modifié la progression en même temps.
+
+  Une progression n'est donc jamais remplacée silencieusement.
+- **Déconnexion** : la progression reste sur l'appareil, ou est effacée si on le demande (ordinateur partagé).
+
+### Classement
+
+- **Hebdomadaire** (depuis le lundi 00 h UTC) **et global**. Pour chaque joueur : rang, pseudo, XP de la semaine, XP totaux et niveau estimé, plus sa position personnelle. Aucune autre donnée n'est exposée.
+- **Masquage** : on peut se retirer du classement depuis la page Compte.
+- **Calcul des XP par le serveur** : il ne reprend pas la valeur envoyée. Pour chaque séance terminée :
+  - cohérence des nombres ;
+  - au moins 1,5 s par exercice en moyenne ;
+  - séance terminée après la création du compte et déclarée dans les 7 jours ;
+  - XP plafonnés au maximum possible pour ses réponses ;
+  - pas de double comptage ;
+  - plafond de 2 000 XP par jour.
+
+  C'est une validation de vraisemblance, pas un anti-triche complet : le serveur ne rejoue pas les exercices.
+
+### Mise en service
+
+Prérequis : un compte Cloudflare (gratuit).
+
+```bash
+cd worker
+npm install
+npx wrangler login                      # ouvre le navigateur pour autoriser Wrangler
+npx wrangler d1 create passerelle       # copier le database_id affiché dans wrangler.toml
+npm run db:migrate:remote               # crée les tables
+npm run deploy                          # publie l'API : https://passerelle-api.<sous-domaine>.workers.dev
+```
+
+Ensuite, indiquez cette adresse dans `VITE_API_URL` (étape de build de `.github/workflows/deploy.yml`) et poussez sur `main`.
+
+En local :
+1. `npm --prefix worker run db:migrate:local` ;
+2. `npm --prefix worker run dev` (API sur le port 8787) ;
+3. un fichier `.env.development.local` contenant `VITE_API_URL=http://localhost:8787` ;
+4. `npm run dev`.
+
+### Limites
+
+- **Pas de récupération du mot de passe** : sans adresse email, un mot de passe oublié ne peut pas être réinitialisé. La progression reste toutefois sur les appareils déjà utilisés, et l'export reste possible.
+- **Blocage temporaire** : la limitation par pseudo permet à un tiers de bloquer temporairement la connexion d'un compte (15 minutes) en multipliant les essais.
+- **Niveau estimé du classement** : il est calculé par l'application sur l'appareil du joueur. Ce n'est pas une valeur vérifiée par le serveur.
+- **Quotas du forfait gratuit** : 100 000 requêtes par jour pour Workers, 5 Go et 100 000 écritures par jour pour D1. C'est largement suffisant pour un groupe d'amis.
 
 ## Ce que contient l'application
 
@@ -78,9 +172,14 @@ src/
     evaluation/   interface d'évaluation des productions (locale par défaut)
     learning/     FSRS, maîtrise, sélection, planification, progression par étapes
   storage/        IndexedDB (repli en mémoire), export / import validés
+  account/        compte, synchronisation, classement (client de l'API)
   audio/          synthèse vocale (Web Speech) et signaux sonores
   state/          store central, dates, calculs statistiques
   app/ pages/ exercises/ ui/ styles/   interface
+worker/
+  src/            API Cloudflare Worker : comptes, sessions, progression, classement
+  migrations/     schéma SQL de la base D1
+  test/           tests de l'API sur SQLite en mémoire
 ```
 
 ## Dépendances

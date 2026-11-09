@@ -102,4 +102,11 @@ export {
   Glasses as IconGlasses,
   Landmark as IconLandmark,
   PenTool as IconPenTool,
+  CircleUserRound as IconUser,
+  Cloud as IconCloud,
+  CloudOff as IconCloudOff,
+  RefreshCw as IconRefresh,
+  LogOut as IconLogout,
+  LogIn as IconLogin,
+  ShieldCheck as IconShield,
 } from 'lucide-react';

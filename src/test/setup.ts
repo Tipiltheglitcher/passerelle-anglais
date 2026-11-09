@@ -7,4 +7,5 @@ import { afterEach } from 'vitest';
 afterEach(() => cleanup());
 
 // jsdom n'implémente pas le défilement : on le neutralise pour éviter le bruit dans la console.
-Object.defineProperty(window, 'scrollTo', { value: () => {}, writable: true });
+// (les tests de l'API tournent dans l'environnement Node, sans window)
+if (typeof window !== 'undefined') Object.defineProperty(window, 'scrollTo', { value: () => {}, writable: true });
