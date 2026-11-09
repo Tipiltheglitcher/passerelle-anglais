@@ -127,8 +127,8 @@ export function StatsPage() {
           <Card className="level-card">
             <ProgressRing value={level.progress} size={128} stroke={11} label={`Progression vers ${STAGE_BY_ID[level.stage].to} : ${pct(level.progress)}`}>
               <div>
-                <div className="ring-big">{level.label}</div>
-                <div className="faint tiny">niveau estimé</div>
+                <div className="ring-big">{level.undetermined ? '?' : level.label}</div>
+                <div className="faint tiny">{level.undetermined ? 'à déterminer' : 'niveau estimé'}</div>
               </div>
             </ProgressRing>
             <div className="stack" style={{ gap: 6 }}>

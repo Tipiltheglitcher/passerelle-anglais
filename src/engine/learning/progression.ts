@@ -200,7 +200,11 @@ export interface ProfileEstimate {
   evidence: LevelEvidence;
   /** D'où vient le plancher éventuel (test de niveau, évaluation réussie). */
   floor: LevelLabel | null;
+  /** Aucun résultat ni test de niveau : le niveau n'est pas encore estimable. */
+  undetermined: boolean;
 }
+
+const UNDETERMINED_DESCRIPTION = 'Niveau à déterminer : passez le test de niveau ou commencez le parcours, l’estimation se construira à partir de vos réponses.';
 
 const DESCRIPTIONS: Record<string, string> = {
   'A2−': 'Vous consolidez les bases du niveau A2.',
@@ -296,5 +300,7 @@ export function estimateProfile(skills: Record<string, SkillState>, profile: Pro
     }
     domains[d] = { label: best, mastery: lastM, coverage: lastC };
   }
-  return { label, stage, target, progress, description: DESCRIPTIONS[label] ?? '', domains, evidence, floor };
+  const undetermined = !floor && !Object.values(skills).some((sk) => sk && sk.attempts > 0);
+  const description = undetermined ? UNDETERMINED_DESCRIPTION : (DESCRIPTIONS[label] ?? '');
+  return { label, stage, target, progress, description, domains, evidence, floor, undetermined };
 }

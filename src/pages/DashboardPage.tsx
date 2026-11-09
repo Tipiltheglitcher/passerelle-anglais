@@ -121,8 +121,8 @@ export function DashboardPage() {
         <div className="hero-level">
           <ProgressRing value={level.progress} size={168} stroke={13} label={`Progression vers ${stage.to} : ${Math.round(level.progress * 100)} %`}>
             <div>
-              <div className="ring-big">{level.label}</div>
-              <div className="faint small">niveau estimé</div>
+              <div className="ring-big">{level.undetermined ? '?' : level.label}</div>
+              <div className="faint small">{level.undetermined ? 'à déterminer' : 'niveau estimé'}</div>
             </div>
           </ProgressRing>
           <p className="eyebrow center" style={{ margin: 0 }}>

@@ -72,6 +72,10 @@ describe('estimation du niveau', () => {
     expect(e.label).toBe('A2−');
     expect(e.stage).toBe('a2b1');
     expect(e.domains.grammar.label).toBeNull();
+    // sans aucun résultat ni test de niveau, le niveau est affiché « à déterminer »
+    expect(e.undetermined).toBe(true);
+    expect(estimateProfile({ present_simple: { ...newSkillState('present_simple'), attempts: 1 } }, profile(), T0).undetermined).toBe(false);
+    expect(estimateProfile({}, profile({ placementLevel: 'A2−' }), T0).undetermined).toBe(false);
   });
 
   it('B2 n’est estimé qu’avec des résultats représentatifs au niveau B2', () => {
