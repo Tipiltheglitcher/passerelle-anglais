@@ -112,7 +112,7 @@ npm run db:migrate:remote               # crée les tables
 npm run deploy                          # publie l'API : https://passerelle-api.<sous-domaine>.workers.dev
 ```
 
-Ensuite, indiquez cette adresse dans `VITE_API_URL` (étape de build de `.github/workflows/deploy.yml`) et poussez sur `main`.
+Ensuite, indiquez cette adresse dans `VITE_API_URL` (étape de build de `.github/workflows/deploy.yml`) et poussez sur `main`. L'API de ce dépôt est publiée sur `https://passerelle-api.maathixsrs.workers.dev`.
 
 En local :
 1. `npm --prefix worker run db:migrate:local` ;

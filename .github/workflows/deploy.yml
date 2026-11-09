@@ -31,6 +31,8 @@ jobs:
         run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
+          # API des comptes (Cloudflare Worker) : adresse publique, non confidentielle
+          VITE_API_URL: https://passerelle-api.maathixsrs.workers.dev
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

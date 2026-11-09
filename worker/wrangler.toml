@@ -12,6 +12,6 @@ ALLOWED_ORIGINS = "https://tipiltheglitcher.github.io"
 [[d1_databases]]
 binding = "DB"
 database_name = "passerelle"
-# Remplacé par l'identifiant affiché par « npx wrangler d1 create passerelle ».
-database_id = "00000000-0000-0000-0000-000000000000"
+# Identifiant affiché par « npx wrangler d1 create passerelle » (non confidentiel).
+database_id = "487325ef-a5cc-4543-a113-a469ecc49a3f"
 migrations_dir = "migrations"
