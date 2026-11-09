@@ -105,6 +105,9 @@ describe("correction d'erreur", () => {
     const target = words.find((b) => b.textContent === ex.tokens[ex.wrong[0]])!;
     await user.click(target);
     const input = await screen.findByLabelText('Correction :');
+    // la vue donne le focus au champ (et sélectionne son texte) après un court délai :
+    // on l'attend pour ne pas taper pendant ce délai
+    await waitFor(() => expect(input).toHaveFocus());
     await user.clear(input);
     await user.type(input, ex.correctionText);
     await user.keyboard('{Enter}');
