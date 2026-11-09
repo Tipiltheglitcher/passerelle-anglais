@@ -13,7 +13,7 @@ describe('application', () => {
     window.location.hash = '#/';
     const user = userEvent.setup();
     render(<App />);
-    await screen.findByText('Passez du niveau A2 au niveau B1', {}, { timeout: 8000 });
+    await screen.findByText('Progressez du niveau A2 au niveau C2', {}, { timeout: 8000 });
 
     // démarrer la première leçon
     await user.click(screen.getByRole('button', { name: /Commencer la première leçon/ }));

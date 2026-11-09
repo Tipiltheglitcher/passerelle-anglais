@@ -96,10 +96,10 @@ export function DashboardPage() {
       <section className="hero card">
         <div className="hero-main">
           <p className="eyebrow">{isNew ? 'Bienvenue !' : 'Votre progression'}</p>
-          <h1>{isNew ? `Passez du niveau ${stage.from} au niveau ${stage.to}` : nextDef ? `Prochaine étape : ${nextDef.title}` : 'Continuez sur votre lancée'}</h1>
+          <h1>{isNew ? 'Progressez du niveau A2 au niveau C2' : nextDef ? `Prochaine étape : ${nextDef.title}` : 'Continuez sur votre lancée'}</h1>
           <p className="page-subtitle">
             {isNew
-              ? 'Des exercices générés à l\'infini, une révision espacée qui revient au bon moment, et un parcours qui s\'adapte à vos réussites comme à vos erreurs.'
+              ? `Quatre étapes, des exercices toujours renouvelés, une révision espacée qui revient au bon moment. Vous commencez par l’étape ${stage.from} → ${stage.to} ; si vous avez déjà un meilleur niveau, le test de niveau vous place directement plus loin.`
               : nextDef?.summary}
           </p>
           <div className="hero-actions">
@@ -125,6 +125,9 @@ export function DashboardPage() {
               <div className="faint small">niveau estimé</div>
             </div>
           </ProgressRing>
+          <p className="eyebrow center" style={{ margin: 0 }}>
+            Étape en cours : {stage.from} → {stage.to}
+          </p>
           <div className="level-scale" aria-hidden>
             <span>{stage.from}</span>
             <ProgressBar value={level.progress} size="sm" tone="accent" />
