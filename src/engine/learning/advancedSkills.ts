@@ -23,12 +23,14 @@ import { B2_BANKS } from '@/content/advanced/b2-grammar';
 import { ARGUMENT_B2, DIALOGUE_B2, NUANCE_B2, READING_B2, REGISTER_B2, TEXT_ORDER_B2, WRITING_B2 } from '@/content/advanced/b2-comm';
 import { C1_BANKS } from '@/content/advanced/c1-grammar';
 import { ARGUMENT_C1, DIALOGUE_C1, IMPLICATURE_C1, NUANCE_C1, PRECISION_C1, READING_C1, REGISTER_C1, STYLE_C1, TEXT_ORDER_C1, WRITING_C1 } from '@/content/advanced/c1-comm';
+import { C2_BANKS } from '@/content/advanced/c2-grammar';
+import { ARGUMENT_C2, CONNOTATION_C2, DIALOGUE_C2, IRONY_C2, NUANCE_C2, READING_C2, REGISTER_C2, STYLE_C2, TEXT_ORDER_C2, WRITING_C2 } from '@/content/advanced/c2-comm';
 
 /** Banques de grammaire rédigées, par compétence. */
-export const GRAMMAR_BANKS: Record<string, Bank> = Object.fromEntries([...B2_BANKS, ...C1_BANKS].map((b) => [b.skillId, b]));
+export const GRAMMAR_BANKS: Record<string, Bank> = Object.fromEntries([...B2_BANKS, ...C1_BANKS, ...C2_BANKS].map((b) => [b.skillId, b]));
 
 /** Choix commentés de nuance rattachés à une notion de grammaire. */
-export const NUANCE_EXTRAS: Record<string, InsightItem[]> = { ...NUANCE_B2, ...NUANCE_C1 };
+export const NUANCE_EXTRAS: Record<string, InsightItem[]> = { ...NUANCE_B2, ...NUANCE_C1, ...NUANCE_C2 };
 
 /** Formats complémentaires disponibles pour une compétence de grammaire. */
 export function grammarExtras(skillId: string): ExerciseType[] {
@@ -119,6 +121,13 @@ export const SPECIAL_ENGINES: Record<string, SpecialEngine> = {
   style_c1: engine('style_c1', { style: STYLE_C1, register: REGISTER_C1 }),
   implicature_c1: engine('implicature_c1', { implicature: IMPLICATURE_C1, dialogue: DIALOGUE_C1 }),
   writing_c1: engine('writing_c1', { writing: WRITING_C1 }),
+  connotation_c2: engine('connotation_c2', { nuance: CONNOTATION_C2 }),
+  reading_c2: engine('reading_c2', { reading: READING_C2 }),
+  argument_c2: engine('argument_c2', { argument: ARGUMENT_C2, order: TEXT_ORDER_C2 }),
+  irony_c2: engine('irony_c2', { implicature: IRONY_C2, dialogue: DIALOGUE_C2 }),
+  register_c2: engine('register_c2', { register: REGISTER_C2 }),
+  style_c2: engine('style_c2', { style: STYLE_C2 }),
+  writing_c2: engine('writing_c2', { writing: WRITING_C2 }),
 };
 
 /** Pondération des formats des compétences commentées (tirage quand plusieurs formats coexistent). */

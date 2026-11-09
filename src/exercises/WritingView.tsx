@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { WritingExercise, WritingReport } from '@/engine/exercises/types';
 import { analyseWriting } from '@/engine/exercises/advanced';
+import { assessProduction } from '@/engine/evaluation/production';
 import { Button } from '@/ui/kit';
 import type { ExerciseViewProps } from './common';
 import { IconCheck, IconCircleCheck, IconCircleX, IconInfo, IconPen } from '@/ui/icons';
@@ -25,12 +26,14 @@ export function WritingView({ exercise: ex, phase, onChange, onSubmit }: Exercis
   const [report, setReport] = useState<WritingReport | null>(null);
   const [self, setSelf] = useState<(number | null)[]>(() => ex.rubric.map(() => null));
   const [showModel, setShowModel] = useState(false);
+  const [comments, setComments] = useState<string[] | null>(null);
   useEffect(() => {
     setText('');
     setStep('write');
     setReport(null);
     setSelf(ex.rubric.map(() => null));
     setShowModel(false);
+    setComments(null);
   }, [ex.id, ex.rubric]);
 
   const live = useMemo(() => analyseWriting(ex, text), [ex, text]);
@@ -39,6 +42,8 @@ export function WritingView({ exercise: ex, phase, onChange, onSubmit }: Exercis
   const analyse = () => {
     setReport(analyseWriting(ex, text));
     setStep('review');
+    // évaluateur complémentaire éventuel (par défaut : local uniquement)
+    void assessProduction(ex, text).then((a) => setComments(a.source === 'external' && a.comments?.length ? a.comments : null));
   };
 
   const validate = () => {
@@ -134,6 +139,16 @@ export function WritingView({ exercise: ex, phase, onChange, onSubmit }: Exercis
           <p className="small writing-noissue">
             <IconInfo size={16} aria-hidden /> Aucune des erreurs fréquentes recherchées n’a été trouvée, ce qui ne garantit pas que le texte est sans faute.
           </p>
+        )}
+        {comments && (
+          <div className="writing-issues">
+            <h4>Avis complémentaire (indicatif)</h4>
+            <ul>
+              {comments.map((c, i) => (
+                <li key={i} className="small">{c}</li>
+              ))}
+            </ul>
+          </div>
         )}
         {rep.repeated.length > 0 && (
           <p className="small muted">

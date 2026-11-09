@@ -138,10 +138,51 @@ export const C1_GUIDED: string[] = [
   'writing_c1',
 ];
 
-export const ADVANCED_UNITS: AdvancedUnitSpec[] = [...B2_UNITS, ...C1_UNITS];
-export const ADVANCED_SKILLS: AdvancedSkillSpec[] = [...B2_SKILLS, ...C1_SKILLS];
+// ---------------------------------------------------------------------------
+// C1 → C2
+
+export const C2_UNITS: AdvancedUnitSpec[] = [
+  { id: 'u_c2_grammar', title: 'Finesse grammaticale', subtitle: 'Inversion conditionnelle, ellipse, nominalisation, aspect', level: 'C2', stage: 'c1c2', icon: 'feather', kind: 'grammar' },
+  { id: 'u_c2_lexis', title: 'Idiomaticité et connotation', subtitle: 'Expressions rares, faux amis subtils, connotations', level: 'C2', stage: 'c1c2', icon: 'quote', kind: 'vocab' },
+  { id: 'u_c2_comm', title: 'Pragmatique et analyse critique', subtitle: 'Ironie, registres fins, style, lecture critique, synthèse', level: 'C2', stage: 'c1c2', icon: 'glasses', kind: 'function' },
+];
+
+export const C2_SKILLS: AdvancedSkillSpec[] = [
+  g('conditional_inversion', "L'inversion conditionnelle", 'Conditional inversion', 'u_c2_grammar', 'C2', [], 'Had I known…, Should you require…, Were she to…, But for…'),
+  g('ellipsis_substitution', 'Ellipse et substitution', 'Ellipsis & substitution', 'u_c2_grammar', 'C2', [], 'so / neither, do so, ones, I hope not, So I have!'),
+  g('nominalisation', 'La nominalisation', 'Nominalisation', 'u_c2_grammar', 'C2', [], 'fail → failure, reluctant → reluctance : le style écrit soutenu.'),
+  g('aspect_nuance', "Valeurs fines de l'aspect", 'Aspect & modality', 'u_c2_grammar', 'C2', [], "You're being…, would (habitude), was to, will (supposition)."),
+  v('idioms_c2', 'Expressions idiomatiques (C2)', 'u_c2_lexis', 'C2', 'a moot point, a red herring, a Pyrrhic victory…'),
+  v('falsefriends_c2', 'Faux amis subtils', 'u_c2_lexis', 'C2', 'candid, sympathetic, versatile, to resume, to assume…'),
+  f('connotation_c2', 'Connotation et point de vue', 'Connotation', 'u_c2_lexis', 'C2', 'lexis', 'thrifty ou stingy ? slender ou skinny ? Le mot révèle le jugement.'),
+  f('reading_c2', 'Lecture critique (C2)', 'Critical reading', 'u_c2_comm', 'C2', 'written', 'Essais critiques, satire : thèse, métaphores, ironie.'),
+  f('argument_c2', 'Sophismes et raisonnements', 'Fallacies', 'u_c2_comm', 'C2', 'written', 'Pente glissante, ad hominem, faux dilemme, appel à la tradition.'),
+  f('irony_c2', 'Ironie et understatement', 'Irony & understatement', 'u_c2_comm', 'C2', 'oral', 'Litote britannique, ironie, euphémismes, sous-entendus.'),
+  f('register_c2', 'Registres fins', 'Fine registers', 'u_c2_comm', 'C2', 'written', 'Juridique, journalistique, diplomatique, excuses officielles.'),
+  f('style_c2', 'Précision stylistique', 'Stylistic precision', 'u_c2_comm', 'C2', 'written', 'Clichés, redondances, ambiguïtés, place des modificateurs.'),
+  f('writing_c2', 'Rédaction C2', 'Writing', 'u_c2_comm', 'C2', 'written', 'Synthèse critique de deux points de vue, critique d’œuvre.', { selfAssessed: true }),
+];
+
+export const C2_GUIDED: string[] = [
+  'conditional_inversion',
+  'vocab_idioms_c2',
+  'reading_c2',
+  'ellipsis_substitution',
+  'connotation_c2',
+  'irony_c2',
+  'nominalisation',
+  'style_c2',
+  'aspect_nuance',
+  'vocab_falsefriends_c2',
+  'register_c2',
+  'argument_c2',
+  'writing_c2',
+];
+
+export const ADVANCED_UNITS: AdvancedUnitSpec[] = [...B2_UNITS, ...C1_UNITS, ...C2_UNITS];
+export const ADVANCED_SKILLS: AdvancedSkillSpec[] = [...B2_SKILLS, ...C1_SKILLS, ...C2_SKILLS];
 export const ADVANCED_GUIDED: Record<Exclude<StageId, 'a2b1'>, string[]> = {
   b1b2: B2_GUIDED,
   b2c1: C1_GUIDED,
-  c1c2: [],
+  c1c2: C2_GUIDED,
 };

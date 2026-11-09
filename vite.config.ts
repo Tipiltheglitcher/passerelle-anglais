@@ -19,7 +19,19 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    chunkSizeWarningLimit: 900,
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        // Découpage pour le cache navigateur : bibliothèques, contenus avancés
+        // (B2 → C2) et contenus de base changent à des rythmes différents.
+        manualChunks(id) {
+          if (id.includes('node_modules')) return 'vendor';
+          if (id.includes('/src/content/advanced/') || id.includes('/src/content/lessons/') || id.includes('vocabulary-advanced')) return 'content-advanced';
+          if (id.includes('/src/content/')) return 'content';
+          return undefined;
+        },
+      },
+    },
   },
   test: {
     environment: 'jsdom',

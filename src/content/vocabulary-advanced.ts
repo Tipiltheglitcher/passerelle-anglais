@@ -119,4 +119,47 @@ with regard to|en ce qui concerne|expr|C1|With regard to your request, we are un
 notwithstanding|nonobstant/malgré|adv|C1|Notwithstanding these difficulties, the project was a success.|Malgré ces difficultés, le projet a été un succès.
 a wide range of|un large éventail de|coll|C1|The shop offers a wide range of products.|Le magasin propose un large éventail de produits.
 reach a consensus|parvenir à un consensus|coll|C1|The committee failed to reach a consensus.|Le comité n'est pas parvenu à un consensus.
+## idioms_c2|Expressions idiomatiques (C2)|quote|C2
+a moot point|une question discutable/sans portée pratique|idiom|C2|Whether he knew is a moot point now that he has resigned.|Savoir s'il était au courant n'a plus d'intérêt maintenant qu'il a démissionné.
+a foregone conclusion|une issue jouée d'avance|idiom|C2|The result of the vote was a foregone conclusion.|Le résultat du vote était joué d'avance.
+a red herring|une fausse piste|idiom|C2|The missing letter turned out to be a red herring.|La lettre disparue s'est révélée être une fausse piste.
+bite the bullet|serrer les dents/se résoudre à|idiom|C2|We'll have to bite the bullet and raise our prices.|Nous allons devoir nous y résoudre et augmenter nos prix.
+the elephant in the room|le sujet que tout le monde évite|idiom|C2|Nobody mentioned the budget, the elephant in the room.|Personne n'a parlé du budget, le sujet que tout le monde évitait.
+steal someone's thunder/steal my thunder|voler la vedette à quelqu'un|idiom|C2|Don't steal my thunder by telling them first!|Ne me vole pas la vedette en le leur disant avant moi !
+a chip on one's shoulder/a chip on his shoulder|un complexe, une rancœur|idiom|C2|He has a chip on his shoulder about not going to university.|Il nourrit une rancœur de ne pas être allé à l'université.
+beg the question/begs the question|soulever la question|idiom|C2|This begs the question of who will pay.|Cela soulève la question de savoir qui paiera.
+pay lip service to|ne soutenir qu'en paroles|idiom|C2|Many companies pay lip service to diversity.|Beaucoup d'entreprises ne défendent la diversité qu'en paroles.
+a double-edged sword|une arme à double tranchant|idiom|C2|Fame can be a double-edged sword.|La célébrité peut être une arme à double tranchant.
+on tenterhooks|sur des charbons ardents|idiom|C2|We were on tenterhooks waiting for the results.|Nous étions sur des charbons ardents en attendant les résultats.
+cut to the chase|aller droit au but|idiom|C2|Let's cut to the chase: how much will it cost?|Allons droit au but : combien cela va-t-il coûter ?
+rest on one's laurels/rest on our laurels|se reposer sur ses lauriers|idiom|C2|We can't afford to rest on our laurels.|Nous ne pouvons pas nous permettre de nous reposer sur nos lauriers.
+a Pyrrhic victory|une victoire à la Pyrrhus|idiom|C2|The lawsuit was a Pyrrhic victory: they won, but went bankrupt.|Le procès a été une victoire à la Pyrrhus : ils ont gagné, mais ont fait faillite.
+the devil is in the detail|le diable se cache dans les détails|idiom|C2|The plan sounds simple, but the devil is in the detail.|Le projet semble simple, mais le diable se cache dans les détails.
+sail close to the wind/sailing close to the wind|jouer avec le feu/frôler l'illégalité|idiom|C2|The company has been sailing close to the wind for years.|L'entreprise frôle l'illégalité depuis des années.
+at loggerheads|à couteaux tirés|idiom|C2|The two ministers are at loggerheads over the budget.|Les deux ministres sont à couteaux tirés au sujet du budget.
+throw caution to the wind|jeter toute prudence aux orties|idiom|C2|For once, she decided to throw caution to the wind.|Pour une fois, elle a décidé d'oublier toute prudence.
+split hairs|couper les cheveux en quatre|idiom|C2|Let's not split hairs over a few pounds.|Ne coupons pas les cheveux en quatre pour quelques livres.
+a dark horse|un outsider (qui surprend)|idiom|C2|The new candidate could be a dark horse in the election.|Le nouveau candidat pourrait créer la surprise à l'élection.
+touch a nerve|toucher un point sensible|idiom|C2|Be careful: that question may touch a nerve.|Attention : cette question risque de toucher un point sensible.
+## falsefriends_c2|Faux amis subtils|alert|C2
+candid|franc, sincère (≠ candide)|ff|C2|To be candid, I don't think the plan will work.|Pour être franc, je ne pense pas que le projet fonctionnera.
+understanding|compréhensif|ff|C2|My boss was very understanding when I was ill.|Mon patron a été très compréhensif quand j'étais malade.
+sympathetic|compatissant (≠ sympathique)|ff|C2|She was very sympathetic when I told her about my problems.|Elle s'est montrée très compatissante quand je lui ai parlé de mes problèmes.
+pretend|faire semblant (≠ prétendre)|ff|C2|He pretended to be asleep.|Il a fait semblant de dormir.
+resume|reprendre (≠ résumer)|ff|C2|The meeting will resume after lunch.|La réunion reprendra après le déjeuner.
+abusive|injurieux, violent (≠ abusif)|ff|C2|He received abusive messages online.|Il a reçu des messages injurieux en ligne.
+versatile|polyvalent (≠ versatile)|ff|C2|She is a versatile actress who can play any role.|C'est une actrice polyvalente qui peut jouer n'importe quel rôle.
+deceive|tromper (≠ décevoir)|ff|C2|The advert was designed to deceive consumers.|La publicité visait à tromper les consommateurs.
+achieve|atteindre, réussir (≠ achever)|ff|C2|It took years to achieve this result.|Il a fallu des années pour obtenir ce résultat.
+evade|esquiver, se soustraire à (≠ s'évader)|ff|C2|He tried to evade the question.|Il a essayé d'esquiver la question.
+gentle|doux (≠ gentil)|ff|C2|He has a gentle voice.|Il a une voix douce.
+genial|jovial, cordial (≠ génial)|ff|C2|Our host was a genial man who made everyone feel welcome.|Notre hôte était un homme jovial qui mettait tout le monde à l'aise.
+preservative/preservatives|conservateur alimentaire (≠ préservatif)|ff|C2|This bread contains no preservatives.|Ce pain ne contient aucun conservateur.
+assume|supposer (≠ assumer)|ff|C2|I assume you've read the report.|Je suppose que tu as lu le rapport.
+cave|grotte (≠ cave)|ff|C2|They explored a cave by the sea.|Ils ont exploré une grotte au bord de la mer.
+fabric|tissu (≠ fabrique)|ff|C2|This fabric is soft and light.|Ce tissu est doux et léger.
+rest|se reposer (≠ rester)|ff|C2|You should rest for a few days.|Tu devrais te reposer quelques jours.
+grape/grapes|raisin (≠ grappe)|ff|C2|She bought a bunch of grapes.|Elle a acheté une grappe de raisin.
+deliver|livrer (≠ délivrer)|ff|C2|We deliver to your door.|Nous livrons à votre porte.
+deception|tromperie (≠ déception)|ff|C2|The whole scheme was based on deception.|Tout le stratagème reposait sur la tromperie.
 `;

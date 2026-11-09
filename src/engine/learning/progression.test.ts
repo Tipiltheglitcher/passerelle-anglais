@@ -118,7 +118,7 @@ describe('évaluations de fin de niveau', () => {
   });
 
   it('chaque niveau avancé a une évaluation de fin de niveau et deux examens blancs', () => {
-    for (const lv of ['B2', 'C1'] as const) {
+    for (const lv of ['B2', 'C1', 'C2'] as const) {
       const exams = EXAMS.filter((e) => e.level === lv);
       expect(exams.some((e) => e.gate === lv)).toBe(true);
       expect(exams.length).toBeGreaterThanOrEqual(3);

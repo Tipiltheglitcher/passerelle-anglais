@@ -53,6 +53,8 @@ const NON_GRAMMATICAL_TAGS = new Set([
   'style',
   'cohesion',
   'word_formation_meaning',
+  'aspect_nuance',
+  'ellipsis',
 ]);
 
 export function itemText(item: SentenceItem): string {

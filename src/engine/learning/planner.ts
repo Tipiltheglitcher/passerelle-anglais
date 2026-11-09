@@ -435,6 +435,7 @@ export const PLACEMENT_BANDS: PlacementBand[] = [
   { id: 'b1', label: 'B1', level: 'B1', skills: ['pp_for_since', 'first_conditional', 'second_conditional', 'gerund_infinitive', 'relative_clauses', 'passive'] },
   { id: 'b2', label: 'B2', level: 'B2', skills: ['third_conditional', 'modals_past', 'passive_advanced', 'wish_if_only', 'vocab_colloc_b2', 'register_b2'], types: ['mcq', 'cloze', 'contextChoice', 'nuance', 'register'] },
   { id: 'c1', label: 'C1', level: 'C1', skills: ['inversion_negative', 'hedging', 'participle_clauses', 'word_formation_c1', 'precision_c1', 'implicature_c1'], types: ['mcq', 'cloze', 'contextChoice', 'nuance', 'implicature'] },
+  { id: 'c2', label: 'C2', level: 'C2', skills: ['conditional_inversion', 'ellipsis_substitution', 'aspect_nuance', 'connotation_c2', 'vocab_idioms_c2', 'irony_c2'], types: ['mcq', 'cloze', 'contextChoice', 'nuance', 'implicature'] },
 ];
 
 /** Score minimal d'une bande pour poursuivre le test. */
