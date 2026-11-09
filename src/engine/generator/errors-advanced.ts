@@ -50,6 +50,7 @@ export const ADVANCED_ERROR_TAGS: Record<string, ErrorTagInfo> = {
   hedging: { label: 'Atténuation', explanation: "En anglais soutenu, on nuance une affirmation : It would appear that…, tends to, arguably, to some extent, may well…" },
   emphasis_form: { label: "Mise en relief", explanation: 'do / does / did + base pour insister (I did warn you) ; whatsoever après une négation ; the very + nom.' },
   modal_nuance: { label: 'Nuance modale', explanation: "be bound to (c'est certain), be likely to (c'est probable), may well (il est fort possible), might as well (autant…)." },
+  word_formation_meaning: { label: 'Mot bien formé, mais sens inadapté', explanation: 'Le mot existe, mais son sens (positif / négatif, actif / passif) ne correspond pas au contexte.' },
   word_formation: { label: 'Formation des mots', explanation: 'Le mot doit avoir la bonne nature (nom, adjectif, adverbe, verbe) et, si besoin, un préfixe négatif (un-, in-, im-, ir-, dis-).' },
   // ----- C2
   conditional_inversion: { label: 'Inversion conditionnelle', explanation: "En registre soutenu, if disparaît et l'auxiliaire passe devant le sujet : Had I known… (= If I had known), Should you need… (= If you need), Were she to… (= If she were to)." },

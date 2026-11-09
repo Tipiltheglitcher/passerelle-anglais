@@ -17,6 +17,7 @@ import * as complex from './skills/complex';
 import * as narrative from './skills/narrative';
 import { bankGenerator } from './bank';
 import { B2_BANKS } from '@/content/advanced/b2-grammar';
+import { C1_BANKS } from '@/content/advanced/c1-grammar';
 
 export const ITEM_GENERATORS: Record<string, ItemGenerator> = {
   present_simple: present.presentSimple,
@@ -70,7 +71,7 @@ export const ITEM_GENERATORS: Record<string, ItemGenerator> = {
   past_perfect: narrative.pastPerfect,
   third_conditional: conditionals.thirdConditional,
   // banques d'items rédigés
-  ...Object.fromEntries([...B2_BANKS].map((b) => [b.skillId, bankGenerator(b)])),
+  ...Object.fromEntries([...B2_BANKS, ...C1_BANKS].map((b) => [b.skillId, bankGenerator(b)])),
 };
 
 export function hasItemGenerator(skillId: string): boolean {

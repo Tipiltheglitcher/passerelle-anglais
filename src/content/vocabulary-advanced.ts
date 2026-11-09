@@ -95,4 +95,28 @@ far from|loin de|expr|B2|The situation is far from perfect.|La situation est loi
 in favour of/in favor of|en faveur de|expr|B2|Most residents are in favour of the new park.|La plupart des habitants sont en faveur du nouveau parc.
 opposed to/be opposed to|opposé à|adj|B2|Many farmers are opposed to the plan.|Beaucoup d'agriculteurs sont opposés au projet.
 a vicious circle|un cercle vicieux|coll|B2|Poverty and poor health create a vicious circle.|La pauvreté et la mauvaise santé créent un cercle vicieux.
+## academic_c1|Lexique académique et professionnel|scroll|C1
+conduct research|mener des recherches|coll|C1|The team will conduct research into the causes of the disease.|L'équipe mènera des recherches sur les causes de la maladie.
+raise concerns|soulever des inquiétudes|coll|C1|The plan may raise concerns among local residents.|Le projet pourrait susciter des inquiétudes chez les habitants.
+address an issue/address the issue|traiter une question/s'attaquer à un problème|coll|C1|The government must address the issue of housing.|Le gouvernement doit s'attaquer au problème du logement.
+draw a conclusion|tirer une conclusion|coll|C1|It is too early to draw a conclusion.|Il est trop tôt pour tirer une conclusion.
+implement|mettre en œuvre|v|C1|It will take two years to implement the reform.|Il faudra deux ans pour mettre en œuvre la réforme.
+comprehensive|complet/exhaustif|adj|C1|The report provides a comprehensive analysis of the market.|Le rapport fournit une analyse complète du marché.
+significant|important/significatif|adj|C1|There has been a significant rise in costs.|Les coûts ont augmenté de façon significative.
+substantial|considérable|adj|C1|The project requires a substantial investment.|Le projet exige un investissement considérable.
+assess|évaluer|v|C1|We need to assess the impact of the changes.|Nous devons évaluer l'impact des changements.
+outcome|résultat/issue|n|C1|Nobody can predict the outcome of the negotiations.|Personne ne peut prédire l'issue des négociations.
+framework|cadre|n|C1|The agreement provides a framework for future cooperation.|L'accord fournit un cadre pour une coopération future.
+undermine|saper/fragiliser|v|C1|Such decisions could undermine public trust.|De telles décisions pourraient saper la confiance du public.
+enhance|améliorer/renforcer|v|C1|The new software will enhance productivity.|Le nouveau logiciel améliorera la productivité.
+feasible|réalisable|adj|C1|Is the project financially feasible?|Le projet est-il réalisable sur le plan financier ?
+bias|parti pris/biais|n|C1|The study was criticised for its bias.|L'étude a été critiquée pour son parti pris.
+stakeholder|partie prenante|n|C1|Every stakeholder was consulted before the decision.|Chaque partie prenante a été consultée avant la décision.
+meet the requirements|satisfaire aux exigences|coll|C1|Your application does not meet the requirements.|Votre candidature ne satisfait pas aux exigences.
+a key factor|un facteur déterminant|coll|C1|Price is a key factor in our decision.|Le prix est un facteur déterminant dans notre décision.
+in terms of|en termes de/sur le plan de|expr|C1|In terms of cost, the second option is better.|Sur le plan du coût, la seconde option est meilleure.
+with regard to|en ce qui concerne|expr|C1|With regard to your request, we are unable to help.|En ce qui concerne votre demande, nous ne pouvons pas vous aider.
+notwithstanding|nonobstant/malgré|adv|C1|Notwithstanding these difficulties, the project was a success.|Malgré ces difficultés, le projet a été un succès.
+a wide range of|un large éventail de|coll|C1|The shop offers a wide range of products.|Le magasin propose un large éventail de produits.
+reach a consensus|parvenir à un consensus|coll|C1|The committee failed to reach a consensus.|Le comité n'est pas parvenu à un consensus.
 `;

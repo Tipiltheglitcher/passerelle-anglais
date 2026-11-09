@@ -92,10 +92,56 @@ export const B2_GUIDED: string[] = [
   'writing_b2',
 ];
 
-export const ADVANCED_UNITS: AdvancedUnitSpec[] = [...B2_UNITS];
-export const ADVANCED_SKILLS: AdvancedSkillSpec[] = [...B2_SKILLS];
+// ---------------------------------------------------------------------------
+// B2 → C1
+
+export const C1_UNITS: AdvancedUnitSpec[] = [
+  { id: 'u_c1_syntax', title: 'Syntaxe complexe', subtitle: 'Inversion, phrases clivées, participiales, subjonctif', level: 'C1', stage: 'b2c1', icon: 'layers', kind: 'grammar' },
+  { id: 'u_c1_nuance', title: 'Nuancer son propos', subtitle: 'Atténuation, nuances modales, mise en relief', level: 'C1', stage: 'b2c1', icon: 'scale', kind: 'grammar' },
+  { id: 'u_c1_lexis', title: 'Lexique C1', subtitle: 'Lexique académique, formation des mots, précision', level: 'C1', stage: 'b2c1', icon: 'book', kind: 'vocab' },
+  { id: 'u_c1_comm', title: 'Textes exigeants', subtitle: 'Lecture, argumentation, style, implicite, rédaction', level: 'C1', stage: 'b2c1', icon: 'scroll', kind: 'function' },
+];
+
+export const C1_SKILLS: AdvancedSkillSpec[] = [
+  g('inversion_negative', "L'inversion après un adverbe négatif", 'Negative inversion', 'u_c1_syntax', 'C1', [], 'Never have I…, Not only did…, No sooner had…'),
+  g('cleft_sentences', 'Les phrases clivées', 'Cleft sentences', 'u_c1_syntax', 'C1', [], 'It was… that…, What I need is…'),
+  g('participle_clauses', 'Les propositions participiales', 'Participle clauses', 'u_c1_syntax', 'C1', [], 'Having finished…, Built in 1850…, Not knowing…'),
+  g('subjunctive_formal', 'Subjonctif et tournures formelles', 'Formal subjunctive', 'u_c1_syntax', 'C1', [], 'insist that he be…, Should you need…'),
+  g('hedging', 'Atténuer et modaliser', 'Hedging', 'u_c1_nuance', 'C1', [], 'It would appear that…, tend to, to some extent.'),
+  g('modals_nuance', 'Nuances modales', 'Modal nuances', 'u_c1_nuance', 'C1', [], 'be bound to, might as well, be supposed to…'),
+  g('emphasis', 'La mise en relief', 'Emphasis', 'u_c1_nuance', 'C1', [], 'I did warn you, whatsoever, by far, the very…'),
+  v('academic_c1', 'Lexique académique et professionnel', 'u_c1_lexis', 'C1', 'conduct research, assess, feasible, notwithstanding…'),
+  g('word_formation_c1', 'Formation des mots', 'Word formation', 'u_c1_lexis', 'C1', [], 'rely → reliability, convince → unconvincing…', 'lexis'),
+  f('precision_c1', 'Le mot juste', 'Lexical precision', 'u_c1_lexis', 'C1', 'lexis', 'Synonymes proches, constructions, faux amis.'),
+  f('reading_c1', 'Textes longs (C1)', 'Demanding texts', 'u_c1_comm', 'C1', 'written', 'Essais et tribunes : nuances, inférences, structure.'),
+  f('argument_c1', 'Argumentations complexes', 'Complex arguments', 'u_c1_comm', 'C1', 'written', 'Concession, réfutation, présupposés, fausses alternatives.'),
+  f('style_c1', 'Style et registre', 'Style & register', 'u_c1_comm', 'C1', 'written', 'Concision, cohésion, parallélisme, registre académique.'),
+  f('implicature_c1', "L'implicite", 'Implied meaning', 'u_c1_comm', 'C1', 'oral', 'Refus indirects, litotes, esquives, sous-entendus.'),
+  f('writing_c1', 'Rédaction C1', 'Writing', 'u_c1_comm', 'C1', 'written', 'Essai argumentatif, proposition, lettre au rédacteur.', { selfAssessed: true }),
+];
+
+export const C1_GUIDED: string[] = [
+  'inversion_negative',
+  'vocab_academic_c1',
+  'cleft_sentences',
+  'reading_c1',
+  'participle_clauses',
+  'precision_c1',
+  'subjunctive_formal',
+  'style_c1',
+  'hedging',
+  'implicature_c1',
+  'modals_nuance',
+  'word_formation_c1',
+  'emphasis',
+  'argument_c1',
+  'writing_c1',
+];
+
+export const ADVANCED_UNITS: AdvancedUnitSpec[] = [...B2_UNITS, ...C1_UNITS];
+export const ADVANCED_SKILLS: AdvancedSkillSpec[] = [...B2_SKILLS, ...C1_SKILLS];
 export const ADVANCED_GUIDED: Record<Exclude<StageId, 'a2b1'>, string[]> = {
   b1b2: B2_GUIDED,
-  b2c1: [],
+  b2c1: C1_GUIDED,
   c1c2: [],
 };

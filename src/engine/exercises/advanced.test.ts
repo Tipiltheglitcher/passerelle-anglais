@@ -14,6 +14,7 @@ import { ALL_SKILLS, SKILL_BY_ID } from '@/content/curriculum';
 import { VOCAB_THEMES } from '@/content/vocabulary';
 import { LESSONS } from '@/content/lessons';
 import { vocabExercise } from './vocab';
+import { ERROR_TAGS } from '@/engine/generator/errors';
 
 function adv(seed: string): AdvancedContext {
   return { rng: createRng(seed), seed, difficulty: 2 };
@@ -83,6 +84,19 @@ describe('compétences avancées : curriculum et leçons', () => {
         const ex = vocabExercise({ rng: createRng(`${t.id}-${type}`), seed: `${t.id}-${type}`, level: 'B1', difficulty: 2 }, t.id, type);
         expect(ex, `${t.id}/${type}`).toBeTruthy();
         expect(evaluate(ex!, correctOf(ex!) ?? { kind: 'multi', correct: 5, total: 5, mistakes: 0 }).correct, `${t.id}/${type}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("étiquettes d'erreur", () => {
+  it('chaque distracteur des banques renvoie à une explication ciblée', () => {
+    for (const bank of Object.values(GRAMMAR_BANKS)) {
+      for (const e of bank.entries) {
+        for (const part of (e.d ?? '').split(';').map((x) => x.trim()).filter(Boolean)) {
+          const tag = part.slice(part.lastIndexOf('=') + 1).trim();
+          expect(ERROR_TAGS[tag], `${e.id} : étiquette « ${tag} » inconnue`).toBeDefined();
+        }
       }
     }
   });
