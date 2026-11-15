@@ -6,14 +6,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { navigate } from '@/app/router';
 import { store, useAppState } from '@/state/store';
 import { evaluate } from '@/engine/exercises/evaluate';
-import type { EvalResult, ExerciseResponse, ExerciseType } from '@/engine/exercises/types';
+import { AUDIO_TYPES, type EvalResult, type ExerciseResponse, type ExerciseType } from '@/engine/exercises/types';
 import { currentItem, isAnswered, progressOf, summarize, type Session } from '@/engine/learning/session';
 import type { SessionMode } from '@/engine/learning/types';
 import { ExerciseView, FeedbackPanel, exerciseHeader, isSelfChecking } from '@/exercises/ExerciseView';
 import { playError, playFanfare, playSuccess } from '@/audio/sfx';
 import { stopSpeaking } from '@/audio/tts';
 import { Button, IconButton, Modal, ProgressBar } from '@/ui/kit';
-import { IconClose, IconFlame, IconSkip, IconTimer, IconZap } from '@/ui/icons';
+import { IconClose, IconFlame, IconSkip, IconTimer, IconVolumeOff, IconZap } from '@/ui/icons';
 import { SessionSummary } from './SessionSummary';
 import { prefersReducedMotion } from '@/app/theme';
 
@@ -182,6 +182,22 @@ export function SessionPage({ query }: { query: URLSearchParams }) {
     submit(empty, true);
   };
 
+  // « Je ne peux pas écouter » : exercice remplacé, sans pénalité, écoute suspendue une heure
+  const cantListen = () => {
+    const cur = sessionRef.current;
+    if (!cur || phaseRef.current !== 'answering') return;
+    stopSpeaking();
+    const n = store.pauseListening(cur);
+    sessionRef.current = n;
+    setSession(n);
+    setPhase('answering');
+    setResult(null);
+    setReady(false);
+    responseRef.current = null;
+    setToast('Exercices d’écoute en pause pendant 1 heure');
+    setTimeout(() => setToast(null), 2600);
+  };
+
   // touche Entrée globale : vérifier / continuer
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
@@ -248,6 +264,11 @@ export function SessionPage({ query }: { query: URLSearchParams }) {
             <span className="badge badge-primary">{header?.label}</span>
             {item.retry && <span className="badge badge-warning">Nouvelle tentative</span>}
             <span className="exercise-skill">{header?.skill}</span>
+            {phase === 'answering' && AUDIO_TYPES.has(item.exercise.type) && (
+              <button type="button" className="cant-listen" onClick={cantListen}>
+                <IconVolumeOff size={16} aria-hidden /> Je ne peux pas écouter
+              </button>
+            )}
           </div>
           <h1 className="exercise-instruction">{item.exercise.instruction}</h1>
           <ExerciseView exercise={item.exercise} phase={phase} result={result} onChange={onChange} onSubmit={onSubmit} />

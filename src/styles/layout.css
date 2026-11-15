@@ -158,7 +158,7 @@
     inset: auto 0 0 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
     padding: 6px 6px env(safe-area-inset-bottom);
     background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
@@ -218,7 +218,7 @@
 }
 
 .grid-auto {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
 }
 
 .stack {
@@ -256,4 +256,91 @@
   .grid {
     gap: var(--space-4);
   }
+}
+
+/* ---------- Téléphones : rien ne doit élargir la page ----------
+   Sur un téléphone, un seul élément plus large que l'écran permet de faire
+   glisser toute la page de gauche à droite : on interdit ce défilement
+   horizontal et on supprime les largeurs fixes trop grandes. */
+html,
+body {
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+.settings-body,
+.settings-fieldset {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.settings-control .select {
+  width: min(300px, 100%);
+}
+
+.settings-control input[type='range'] {
+  width: min(280px, 100%);
+}
+
+/* zone d'exercice : défilement vertical uniquement (pas de glissement latéral au doigt) */
+.session-main {
+  overflow-x: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+
+.tabbar .tab-link {
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 420px) {
+  .btn {
+    white-space: normal;
+    text-align: center;
+  }
+
+  header.stage-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  header.stage-head > .row {
+    grid-column: 1 / -1;
+  }
+
+  header.stage-head > .row:empty {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .tabbar {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  nav.tabbar .tab-link {
+    font-size: 0.56rem;
+    letter-spacing: -0.035em;
+  }
+}
+
+@media (max-width: 380px) {
+  /* bandeau du haut : le thème reste réglable dans Réglages */
+  .topbar-right > .icon-btn {
+    display: none;
+  }
+}
+
+/* parcours : la grille d'une étape ne doit jamais dépasser la largeur disponible */
+section.stage {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.units {
+  grid-template-columns: minmax(0, 1fr);
 }

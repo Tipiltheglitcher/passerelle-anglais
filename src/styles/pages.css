@@ -177,7 +177,7 @@
 
 .mini-dl {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 96px), 1fr));
   gap: 10px;
   margin: 6px 0;
 }
@@ -323,7 +323,7 @@
 }
 
 .dashboard .grid-3 {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
 }
 
 .goal-card .row {
@@ -614,7 +614,7 @@
 /* ---------- Entraînement ---------- */
 .mode-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 12px;
 }
 
@@ -712,7 +712,7 @@
 
 .exam-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 12px;
 }
 
@@ -767,7 +767,7 @@
 
 .format-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
   gap: 10px;
 }
 
@@ -875,7 +875,7 @@
 
 .theme-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
   gap: 12px;
 }
 
@@ -1646,4 +1646,266 @@
 
 .placement-cta p {
   margin: 0;
+}
+
+/* ---------- Entraînement : onglets ---------- */
+.practice-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.practice-tab {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  padding: 8px 6px;
+  border-radius: var(--radius);
+  font-weight: 650;
+  font-size: 0.95rem;
+  color: var(--text-2);
+  transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-tab:hover {
+  color: var(--text);
+}
+
+.practice-tab.is-active {
+  background: var(--bg-elev);
+  color: var(--primary-700);
+  box-shadow: var(--shadow-sm);
+}
+
+.listen-pause {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.listen-pause p {
+  flex: 1 1 200px;
+}
+
+/* ---------- Entraînement libre ---------- */
+.free-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.free-step h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.free-step-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.free-hint {
+  margin: 10px 0 0;
+}
+
+.level-picks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.level-pick {
+  --tone: var(--primary);
+  min-height: 52px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.level-pick.tone-accent {
+  --tone: var(--accent);
+}
+
+.level-pick.tone-success {
+  --tone: var(--success);
+}
+
+.level-pick.tone-warning {
+  --tone: var(--warning);
+}
+
+.level-pick.tone-danger {
+  --tone: var(--danger);
+}
+
+.level-pick:hover {
+  border-color: var(--tone);
+}
+
+.level-pick:active {
+  transform: scale(0.97);
+}
+
+.level-pick.is-on {
+  background: var(--tone);
+  border-color: var(--tone);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .level-pick.is-on {
+  color: #0c0f1e;
+}
+
+.free-group + .free-group {
+  margin-top: var(--space-4);
+}
+
+.free-group-title {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 10px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  text-align: left;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.theme-card.is-on {
+  border-color: var(--primary);
+  background: var(--primary-softer);
+}
+
+.theme-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--primary);
+}
+
+.theme-card.is-on .theme-icon {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.theme-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.theme-title {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.theme-sub {
+  font-size: 0.82rem;
+  color: var(--text-3);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.theme-meter {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.theme-meter span {
+  display: block;
+  height: 100%;
+  background: var(--success);
+}
+
+.free-notions {
+  margin-top: var(--space-4);
+}
+
+.free-notions p {
+  margin: 0 0 8px;
+}
+
+.free-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+@media (max-width: 520px) {
+  .practice-tabs {
+    gap: 2px;
+    padding: 3px;
+  }
+
+  .level-picks {
+    gap: 6px;
+  }
+
+  .level-pick {
+    min-height: 46px;
+    font-size: 1.02rem;
+  }
+
+  .free-foot > div,
+  .free-foot .btn {
+    width: 100%;
+  }
+
+  .practice-tab {
+    padding-left: 2px;
+    padding-right: 2px;
+    font-size: 0.84rem;
+    letter-spacing: -0.01em;
+  }
 }

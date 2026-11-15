@@ -1,22 +1,22 @@
 /**
- * Entraînement : modes de révision, examens blancs, entraînement par format
- * et séance libre composée par l'utilisateur.
+ * Entraînement, en onglets : entraînement libre (niveau et thèmes au choix),
+ * modes de révision, examens blancs et entraînement par format.
  */
-import { useMemo, useState, type ComponentType } from 'react';
-import { Link, navigate } from '@/app/router';
+import { type ComponentType } from 'react';
+import { Link, navigate, useRoute } from '@/app/router';
+import { FreePractice } from './FreePractice';
 import { store, useAppState } from '@/state/store';
-import { ALL_UNITS, SKILL_BY_ID } from '@/content/curriculum';
+import { ALL_UNITS } from '@/content/curriculum';
 import { EXAMS } from '@/engine/learning/planner';
-import { skillStatus, effectiveMastery } from '@/engine/learning/mastery';
+import { skillStatus } from '@/engine/learning/mastery';
 import { supportsFormat } from '@/engine/learning/formats';
 import { AUDIO_TYPES, EXERCISE_LABELS, type ExerciseType } from '@/engine/exercises/types';
-import { SESSION_SIZES, type SkillState } from '@/engine/learning/types';
+import type { SkillState } from '@/engine/learning/types';
 import { dayKey } from '@/state/dates';
-import { Badge, Button, Card, PageHeader, Segmented } from '@/ui/kit';
+import { Badge, Button, Card, PageHeader } from '@/ui/kit';
 import {
   IconBrain,
   IconChat,
-  IconCheck,
   IconEar,
   IconFile,
   IconGraduation,
@@ -106,7 +106,6 @@ const FORMAT_HINTS: Record<ExerciseType, string> = {
 
 const BASE_FORMATS: ExerciseType[] = ['mcq', 'cloze', 'wordOrder', 'translateFrEn', 'translateEnFr', 'conjugation', 'errorCorrection', 'transformation', 'contextChoice', 'matching', 'dictation', 'listening', 'dialogue', 'reading'];
 const ADVANCED_FORMATS: ExerciseType[] = ['keyword', 'nuance', 'register', 'implicature', 'styleEdit', 'longReading', 'argument', 'dialogueAnalysis', 'textOrder', 'writing'];
-const FORMAT_ORDER: ExerciseType[] = [...BASE_FORMATS, ...ADVANCED_FORMATS];
 
 /** Compétences utilisées pour un entraînement centré sur un format. */
 function poolForFormat(type: ExerciseType, skills: Record<string, SkillState>, now: number): string[] {
@@ -136,11 +135,23 @@ interface ModeCard {
   disabledText?: string;
 }
 
+const TABS = [
+  { id: 'libre', label: 'Libre' },
+  { id: 'revisions', label: 'Révisions' },
+  { id: 'examens', label: 'Examens' },
+  { id: 'formats', label: 'Formats' },
+] as const;
+type TabId = (typeof TABS)[number]['id'];
+
 export function PracticePage() {
   const s = useAppState((st) => st);
+  const route = useRoute();
+  const raw = route.query.get('onglet');
+  const tab: TabId = TABS.some((t) => t.id === raw) ? (raw as TabId) : 'libre';
   const now = Date.now();
   const due = store.dueCounts(now);
-  const audio = s.audioSupported && s.settings.audio.enabled;
+  const audio = s.audioSupported && s.settings.audio.enabled && now >= s.listenPausedUntil;
+  const listenPaused = s.audioSupported && s.settings.audio.enabled && now < s.listenPausedUntil;
   const practicedCount = Object.values(s.skills).filter((k) => k.attempts > 0).length;
 
   const modes: ModeCard[] = [
@@ -204,8 +215,47 @@ export function PracticePage() {
 
   return (
     <div className="stack practice">
-      <PageHeader eyebrow="Entraînement" title="Choisissez votre séance" subtitle="Révisions ciblées, examens blancs ou séance sur mesure : tous les exercices sont générés à la volée, sans répétition récente." />
+      <PageHeader eyebrow="Entraînement" title="Choisissez votre séance" subtitle="Niveau et thèmes au choix, révisions ciblées ou examens blancs : les exercices sont générés à la volée, sans répétition récente." />
 
+      <div className="practice-tabs" role="tablist" aria-label="Type d’entraînement">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls="practice-panel"
+            className={`practice-tab${tab === t.id ? ' is-active' : ''}`}
+            onClick={() => navigate(t.id === 'libre' ? '/entrainement' : `/entrainement?onglet=${t.id}`, { replace: true })}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {listenPaused && (
+        <div className="notice notice-warning listen-pause">
+          <IconHeadphones size={20} aria-hidden />
+          <p>Exercices d’écoute en pause jusqu’à {new Date(s.listenPausedUntil).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.</p>
+          <Button size="sm" variant="secondary" onClick={() => store.resumeListening()}>
+            Réactiver
+          </Button>
+        </div>
+      )}
+
+      <div id="practice-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="stack">
+      {tab === 'libre' && (
+        <section aria-labelledby="free-title">
+          <h2 id="free-title" className="section-title">
+            Entraînement libre
+          </h2>
+          <p className="muted section-sub">Choisissez un niveau, puis les thèmes à travailler. Tous les niveaux sont accessibles, même ceux que le parcours n’a pas encore ouverts.</p>
+          <FreePractice audio={audio} />
+        </section>
+      )}
+
+      {tab === 'revisions' && (
       <section aria-labelledby="modes-title">
         <h2 id="modes-title" className="section-title">
           Modes de révision
@@ -239,10 +289,11 @@ export function PracticePage() {
           </Link>
         </div>
       </section>
+      )}
 
-      <ExamsSection />
-      <FormatsSection audio={audio} />
-      <CustomSession audio={audio} />
+      {tab === 'examens' && <ExamsSection />}
+      {tab === 'formats' && <FormatsSection audio={audio} />}
+      </div>
     </div>
   );
 }
@@ -343,7 +394,7 @@ function FormatsSection({ audio }: { audio: boolean }) {
               type="button"
               className="format-card"
               disabled={disabled}
-              title={disabled ? 'Nécessite la synthèse vocale (voir Paramètres)' : undefined}
+              title={disabled ? 'Écoute indisponible ou en pause (voir Réglages)' : undefined}
               onClick={() => {
                 const pool = poolForFormat(t, skills, Date.now());
                 navigate(`/seance?mode=practice&types=${t}&skills=${pool.join(',')}&t=${now}`);
@@ -360,117 +411,6 @@ function FormatsSection({ audio }: { audio: boolean }) {
       </div>
         </div>
       ))}
-    </section>
-  );
-}
-
-function CustomSession({ audio }: { audio: boolean }) {
-  const skills = useAppState((s) => s.skills);
-  const defaultLength = useAppState((s) => s.settings.sessionLength);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [types, setTypes] = useState<ExerciseType[]>([]);
-  const [length, setLength] = useState<'short' | 'medium' | 'long'>(defaultLength);
-  const now = Date.now();
-
-  const toggle = (id: string) => setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
-  const toggleType = (t: ExerciseType) => setTypes((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]));
-
-  // formats compatibles avec la sélection actuelle
-  const compatible = useMemo(() => {
-    if (!selected.length) return new Set<ExerciseType>();
-    return new Set(FORMAT_ORDER.filter((t) => selected.some((id) => supportsFormat(id, t))));
-  }, [selected]);
-  const usable = selected.filter((id) => !types.length || types.some((t) => supportsFormat(id, t)));
-  const ignored = selected.length - usable.length;
-
-  const start = () => {
-    if (!usable.length) return;
-    const params = new URLSearchParams({ mode: 'practice', skills: usable.join(','), size: String(SESSION_SIZES[length]), t: String(Date.now()) });
-    const okTypes = types.filter((t) => compatible.has(t));
-    if (okTypes.length) params.set('types', okTypes.join(','));
-    navigate(`/seance?${params.toString()}`);
-  };
-
-  return (
-    <section aria-labelledby="custom-title">
-      <h2 id="custom-title" className="section-title">
-        Séance sur mesure
-      </h2>
-      <Card className="custom-card">
-        <div className="custom-step">
-          <h3>1. Notions à travailler</h3>
-          <p className="muted small">Choisissez une ou plusieurs notions, de grammaire comme de vocabulaire. Les notions verrouillées restent accessibles ici.</p>
-          <div className="unit-picks">
-            {ALL_UNITS.map((u, ui) => (
-              <fieldset key={u.id} className="unit-pick">
-                {(ui === 0 || ALL_UNITS[ui - 1].stage !== u.stage) && (
-                  <p className="unit-pick-stage">
-                    <Badge tone={levelTone(STAGES.find((st) => st.id === u.stage)!.to)}>{STAGES.find((st) => st.id === u.stage)!.title}</Badge>
-                  </p>
-                )}
-                <legend>{u.title}</legend>
-                <div className="chips">
-                  {u.skills.map((id) => {
-                    const def = SKILL_BY_ID[id];
-                    const on = selected.includes(id);
-                    const m = effectiveMastery(skills[id], now);
-                    return (
-                      <button key={id} type="button" className={`chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => toggle(id)}>
-                        {on && <IconCheck size={14} aria-hidden />}
-                        {def.title}
-                        {m > 0 && <span className="chip-meter" style={{ ['--m' as string]: m }} aria-label={`maîtrise ${Math.round(m * 100)} %`} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            ))}
-          </div>
-        </div>
-
-        <div className="custom-step">
-          <h3>2. Formats (facultatif)</h3>
-          <p className="muted small">{selected.length ? 'Sans choix, les formats varient selon votre niveau de maîtrise.' : 'Sélectionnez d\'abord au moins une notion.'}</p>
-          <div className="chips">
-            {FORMAT_ORDER.map((t) => {
-              const on = types.includes(t);
-              const disabled = !compatible.has(t) || (AUDIO_TYPES.has(t) && !audio);
-              return (
-                <button key={t} type="button" className={`chip${on ? ' is-on' : ''}`} aria-pressed={on} disabled={disabled} onClick={() => toggleType(t)}>
-                  {on && <IconCheck size={14} aria-hidden />}
-                  {EXERCISE_LABELS[t]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="custom-step custom-foot">
-          <div>
-            <h3>3. Durée</h3>
-            <Segmented
-              label="Durée de la séance"
-              value={length}
-              onChange={setLength}
-              options={[
-                { value: 'short', label: `Courte · ${SESSION_SIZES.short}` },
-                { value: 'medium', label: `Moyenne · ${SESSION_SIZES.medium}` },
-                { value: 'long', label: `Longue · ${SESSION_SIZES.long}` },
-              ]}
-            />
-          </div>
-          <div className="custom-launch">
-            {ignored > 0 && (
-              <p className="small warning-text">
-                {ignored} notion{ignored > 1 ? 's' : ''} ne propose{ignored > 1 ? 'nt' : ''} pas ces formats et ser{ignored > 1 ? 'ont' : 'a'} ignorée{ignored > 1 ? 's' : ''}.
-              </p>
-            )}
-            <Button size="lg" icon={IconPlay} disabled={!usable.length} onClick={start}>
-              Lancer la séance
-            </Button>
-          </div>
-        </div>
-      </Card>
     </section>
   );
 }

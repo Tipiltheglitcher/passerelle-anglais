@@ -6,7 +6,7 @@
 import { useRef, useSyncExternalStore } from 'react';
 import { createRng, randomSeed } from '@/engine/core/rng';
 import { SKILL_BY_ID, skillDef } from '@/content/curriculum';
-import type { EvalResult, Exercise, ExerciseType } from '@/engine/exercises/types';
+import { AUDIO_TYPES, type EvalResult, type Exercise, type ExerciseType } from '@/engine/exercises/types';
 import { cardRetrievability, gradeFromResult, newCard, review, type Grade } from '@/engine/learning/fsrs';
 import { effectiveMastery, estimateLevel, updateSkill } from '@/engine/learning/mastery';
 import { EXAMS, GATE_TITLES, PLACEMENT_CONTINUE, placementResult, planSession, type PlanSlot } from '@/engine/learning/planner';
@@ -59,6 +59,8 @@ export interface AppState {
   audioSupported: boolean;
   /** Productions écrites (les plus récentes d'abord). */
   writings: WritingRecord[];
+  /** « Je ne peux pas écouter » : exercices d'écoute suspendus jusqu'à cette date (0 : actifs). */
+  listenPausedUntil: number;
 }
 
 const EXPECTED_MS: Partial<Record<ExerciseType, number>> = {
@@ -132,6 +134,7 @@ function initialState(): AppState {
     activeSession: null,
     audioSupported: ttsSupported(),
     writings: [],
+    listenPausedUntil: readListenPause(),
   };
 }
 
@@ -213,8 +216,42 @@ export class Store {
     return unlockedStages(this.state.profile, this.state.skills, now);
   }
 
-  audioEnabled(): boolean {
-    return this.state.audioSupported && this.state.settings.audio.enabled;
+  audioEnabled(now = Date.now()): boolean {
+    return this.state.audioSupported && this.state.settings.audio.enabled && now >= this.state.listenPausedUntil;
+  }
+
+  /**
+   * « Je ne peux pas écouter » (transports, cours…) : l'exercice d'écoute en
+   * cours n'est ni compté ni pénalisé, les exercices d'écoute restants de la
+   * séance sont remplacés et l'écoute est suspendue pendant la durée donnée.
+   */
+  pauseListening(session: Session, ms = LISTEN_PAUSE_MS): Session {
+    const until = Date.now() + ms;
+    writeListenPause(until);
+    this.set({ listenPausedUntil: until });
+    const items: SessionItem[] = [];
+    session.items.forEach((it, i) => {
+      if (i < session.index || !AUDIO_TYPES.has(it.exercise.type)) {
+        items.push(it);
+        return;
+      }
+      const types = it.slot.types?.filter((t) => !AUDIO_TYPES.has(t));
+      const ctx = this.selectContext(`${randomSeed()}-sans-audio`, it.exercise.skillId);
+      let ex = makeExercise(it.exercise.skillId, ctx, { tier: it.slot.tier, types: types?.length ? types : undefined });
+      // la compréhension orale n'existe qu'à l'écoute : remplacée par une lecture
+      if (!ex || AUDIO_TYPES.has(ex.type)) ex = makeExercise('reading', this.selectContext(`${randomSeed()}-lecture`, 'reading'), { tier: it.slot.tier });
+      if (ex && !AUDIO_TYPES.has(ex.type)) items.push({ exercise: ex, slot: { ...it.slot, skillId: ex.skillId, type: undefined, types: types?.length ? types : undefined, mistake: undefined } });
+    });
+    const next: Session = { ...session, items };
+    if (next.index >= items.length) return this.end(next);
+    this.saveActive(next);
+    return next;
+  }
+
+  /** Réactive les exercices d'écoute avant la fin de la pause. */
+  resumeListening() {
+    writeListenPause(0);
+    this.set({ listenPausedUntil: 0 });
   }
 
   contentLevel(skillId: string): 'A2' | 'B1' {
@@ -678,6 +715,27 @@ function stopPlacementIfNeeded(s: Session): Session {
 
 function isSession(v: unknown): v is Session {
   return !!v && typeof v === 'object' && Array.isArray((v as Session).items) && typeof (v as Session).index === 'number' && !(v as Session).finished;
+}
+
+const LISTEN_PAUSE_KEY = 'passerelle.listenPause';
+export const LISTEN_PAUSE_MS = 60 * 60000;
+
+function readListenPause(): number {
+  try {
+    const v = Number(globalThis.localStorage?.getItem(LISTEN_PAUSE_KEY));
+    return Number.isFinite(v) && v > Date.now() ? v : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeListenPause(until: number) {
+  try {
+    if (until) globalThis.localStorage?.setItem(LISTEN_PAUSE_KEY, String(until));
+    else globalThis.localStorage?.removeItem(LISTEN_PAUSE_KEY);
+  } catch {
+    /* stockage indisponible : la pause vaut pour cette visite */
+  }
 }
 
 export const store = new Store();

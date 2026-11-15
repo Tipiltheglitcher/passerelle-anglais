@@ -117,6 +117,29 @@
   font-weight: 600;
 }
 
+/* « Je ne peux pas écouter » : à droite des étiquettes de l'exercice */
+.cant-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev);
+  color: var(--text-2);
+  font-size: 0.85rem;
+  font-weight: 650;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cant-listen:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
 .exercise-instruction {
   font-size: clamp(1.12rem, 1rem + 0.7vw, 1.4rem);
   font-weight: 750;
@@ -469,7 +492,7 @@
 
 .grid-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 14px;
 }
 
@@ -514,7 +537,7 @@
 }
 
 .options-compact {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 8px;
   margin: 8px 0 0;
 }
@@ -1318,4 +1341,11 @@
   border-radius: 2px;
   opacity: 0;
   animation: confetti 1300ms var(--ease) forwards;
+}
+
+/* message temporaire : sur une ligne tant que la place le permet */
+.toast {
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
 }

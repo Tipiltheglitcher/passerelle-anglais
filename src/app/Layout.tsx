@@ -129,7 +129,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </main>
       </div>
       <SyncConflictModal />
-      <nav className="tabbar" aria-label="Navigation" style={{ gridTemplateColumns: `repeat(${NAV.length}, 1fr)` }}>
+      <nav className="tabbar" aria-label="Navigation" style={{ gridTemplateColumns: `repeat(${NAV.length}, minmax(0, 1fr))` }}>
         {NAV.map((n) => (
           <Link key={n.to} to={n.to} className={`tab-link${n.match(route.path) ? ' is-active' : ''}`} aria-current={n.match(route.path) ? 'page' : undefined}>
             <n.icon size={22} aria-hidden />

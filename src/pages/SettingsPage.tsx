@@ -146,6 +146,7 @@ export function SettingsPage() {
 
 function AudioSection({ settings, setAudio }: { settings: Settings; setAudio: (p: Partial<Settings['audio']>) => void }) {
   const supported = useAppState((s) => s.audioSupported);
+  const pausedUntil = useAppState((s) => s.listenPausedUntil);
   const voices = useEnglishVoices();
   const [testing, setTesting] = useState(false);
   const audio = settings.audio;
@@ -167,6 +168,17 @@ function AudioSection({ settings, setAudio }: { settings: Settings; setAudio: (p
       ) : (
         <>
           <Switch label="Activer l'audio" description="Lecture des phrases, exercices d'écoute et dictées." checked={audio.enabled} onChange={(enabled) => setAudio({ enabled })} />
+          {audio.enabled && pausedUntil > Date.now() && (
+            <div className="notice notice-warning listen-pause">
+              <IconVolume size={20} aria-hidden />
+              <p>
+                Exercices d’écoute en pause jusqu’à {new Date(pausedUntil).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} (bouton « Je ne peux pas écouter »).
+              </p>
+              <Button size="sm" variant="secondary" onClick={() => store.resumeListening()}>
+                Réactiver maintenant
+              </Button>
+            </div>
+          )}
           <fieldset className="settings-fieldset" disabled={!audio.enabled}>
             <legend className="sr-only">Options audio</legend>
             <Row label="Accent préféré">
