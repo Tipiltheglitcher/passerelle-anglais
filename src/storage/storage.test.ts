@@ -148,6 +148,23 @@ describe('export, import et réinitialisation', () => {
     expect(b.skills.present_simple?.attempts).toBe(a.skills.present_simple?.attempts);
   });
 
+  it('la séance en cours voyage avec la sauvegarde (reprise sur un autre appareil)', async () => {
+    const a = await readyStore();
+    let s = a.startSession('practice', { focusSkills: ['articles'], size: 5 });
+    s = a.answer(s, ok, 2000);
+    s = a.next(s);
+    a.saveActive(s);
+    const fichier = await a.exportSnapshot();
+    const b = await readyStore();
+    await b.importData(fichier);
+    expect(b.getState().activeSession?.id).toBe(s.id);
+    expect(b.getState().activeSession?.index).toBe(1);
+    // une sauvegarde sans séance en cours retire celle de l'appareil
+    a.saveActive(null);
+    await b.importData(await a.exportSnapshot());
+    expect(b.getState().activeSession).toBeNull();
+  });
+
   it("refuse un fichier invalide sans toucher aux données", async () => {
     const store = await readyStore();
     store.startSession('guided', { size: 4 });

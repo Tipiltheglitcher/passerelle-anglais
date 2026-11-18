@@ -130,6 +130,9 @@ export interface ExportFile {
 export async function exportAll(b: Backend, o: { attemptsLimit?: number } = {}): Promise<ExportFile> {
   const data: Record<string, unknown[]> = {};
   for (const s of ALL_STORES) data[s] = s === 'attempts' && o.attemptsLimit ? await b.getLatest('attempts', 'ts', o.attemptsLimit) : await b.getAll(s);
+  // séance en cours : reprise possible sur un autre appareil (section ignorée par les anciennes versions)
+  const active = await b.get<{ id: string; session: unknown }>('meta', 'active');
+  data.active = active?.session ? [active.session] : [];
   return { app: EXPORT_APP, version: EXPORT_VERSION, exportedAt: new Date().toISOString(), data };
 }
 
@@ -146,6 +149,8 @@ export function validateExport(raw: unknown): ExportFile {
     const arr = (f.data as Record<string, unknown>)[s];
     if (arr !== undefined && !Array.isArray(arr)) throw new ImportError(`Section « ${s} » invalide.`);
   }
+  const active = (f.data as Record<string, unknown>).active;
+  if (active !== undefined && !Array.isArray(active)) throw new ImportError('Section « active » invalide.');
   const skills = (f.data.skills ?? []) as SkillState[];
   for (const sk of skills) {
     if (!sk || typeof sk.id !== 'string' || typeof sk.mastery !== 'number') throw new ImportError('Données de compétences invalides.');
@@ -168,6 +173,8 @@ export async function importAll(b: Backend, file: ExportFile): Promise<void> {
     }
     await b.putMany(s, arr);
   }
+  const active = file.data.active?.[0];
+  if (active && typeof active === 'object') await b.put('meta', { id: 'active', session: active });
 }
 
 export async function resetAll(b: Backend): Promise<void> {

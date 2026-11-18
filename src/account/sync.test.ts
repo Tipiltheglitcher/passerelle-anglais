@@ -10,6 +10,9 @@ import { handle } from '../../worker/src/index';
 import { createTestD1 } from '../../worker/test/sqlite-d1';
 import { configureApi } from './api';
 import { AccountSync, decodeSnapshot, encodeSnapshot, type KeyValue } from './sync';
+import type { EvalResult } from '@/engine/exercises/types';
+
+const ok: EvalResult = { correct: true, score: 1, expected: '', userAnswer: '', headline: 'Correct' };
 
 let env: { DB: ReturnType<typeof createTestD1>; ALLOWED_ORIGINS: string };
 
@@ -123,6 +126,46 @@ describe('synchronisation entre appareils', () => {
     await A.sync.resolve('account');
     expect(A.store.getState().profile.totalXp).toBe(500);
     expect(A.sync.getState().status).toBe('synced');
+  });
+
+
+  it('une séance commencée sur un appareil se reprend sur un autre', async () => {
+    const A = await device();
+    await A.sync.register('Chloe', 'motdepasse-solide');
+    expect(A.sync.getState().status).toBe('synced');
+    const B = await device();
+    await B.sync.login('chloe', 'motdepasse-solide');
+    expect(B.sync.getState().status).toBe('synced');
+
+    // A commence une séance et répond à une question : envoi automatique peu après
+    let s = A.store.startSession('practice', { focusSkills: ['articles'], size: 5 });
+    s = A.store.answer(s, ok, 2000);
+    s = A.store.next(s);
+    A.store.saveActive(s);
+    await A.store.flush();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(A.sync.getState().status).not.toBe('pending'); // envoi parti tout seul
+    await A.sync.push(); // attend la fin de l'envoi en cours
+    expect(A.sync.getState().status).toBe('synced');
+
+    // B revient sur l'application : la séance de A est là, au même endroit
+    await B.sync.refresh(true);
+    const surB = B.store.getState().activeSession;
+    expect(surB?.id).toBe(s.id);
+    expect(surB?.index).toBe(1);
+    expect(surB?.answers).toHaveLength(1);
+
+    // B continue la séance, puis A la retrouve à son tour
+    let s2 = B.store.answer(surB!, ok, 2000);
+    s2 = B.store.next(s2);
+    B.store.saveActive(s2);
+    await B.store.flush();
+    await vi.advanceTimersByTimeAsync(5000);
+    await B.sync.push();
+    expect(B.sync.getState().status).toBe('synced');
+    await A.sync.refresh(true);
+    expect(A.store.getState().activeSession?.index).toBe(2);
+    expect(A.sync.getState().conflict).toBeNull();
   });
 
   it('déconnexion : la progression reste sur l’appareil, la reconnexion demande quoi garder', async () => {

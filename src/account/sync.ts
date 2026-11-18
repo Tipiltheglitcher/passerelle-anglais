@@ -69,7 +69,12 @@ const STORAGE_KEY = 'passerelle.account.v1';
 const PUSH_INTERVAL_MS = 5 * 60000;
 const RETRY_MS = 60000;
 const MAX_DATA = 1_850_000;
-const PERSIST_KEYS = ['settings', 'profile', 'skills', 'items', 'sessions', 'daily', 'mistakes', 'writings'] as const;
+/** `activeSession` en dernier : une séance commencée ici se reprend sur un autre appareil. */
+const PERSIST_KEYS = ['settings', 'profile', 'skills', 'items', 'sessions', 'daily', 'mistakes', 'writings', 'activeSession'] as const;
+/** Envoi peu après une réponse dans une séance en cours (pour la reprendre ailleurs). */
+const ACTIVE_PUSH_MS = 4000;
+/** Au retour sur l'application, nouvelle vérification du compte au plus toutes les… */
+const REFRESH_MIN_MS = 15000;
 
 const EMPTY: Persisted = { token: null, user: null, linkedUserId: null, syncedVersion: 0, dirty: false, reportedUpTo: 0, lastSyncAt: null };
 
@@ -132,6 +137,7 @@ export class AccountSync {
   private refs: unknown[] = [];
   private changes = 0;
   private lastAttempt = 0;
+  private lastRefresh = 0;
   private pushTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -195,7 +201,9 @@ export class AccountSync {
       setInterval(() => this.tick(), 60000);
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden' && this.p.dirty && this.linked) void this.push();
+        else if (document.visibilityState === 'visible') void this.refresh();
       });
+      window.addEventListener('focus', () => void this.refresh());
       window.addEventListener('online', () => this.tick(true));
     }
     if (this.p.token) void this.check();
@@ -214,14 +222,30 @@ export class AccountSync {
     const next = PERSIST_KEYS.map((k) => st[k]);
     if (next.every((r, i) => r === this.refs[i])) return;
     const sessionsChanged = next[4] !== this.refs[4] && st.sessions[0]?.id !== (this.refs[4] as AppState['sessions'] | undefined)?.[0]?.id;
+    const activeChanged = next[8] !== this.refs[8];
     this.refs = next;
     this.changes += 1;
     if (!this.linked) return;
     if (!this.p.dirty) this.save({ dirty: true });
     if (this.state.status === 'synced') this.set({ status: 'pending' });
-    // fin de séance : synchronisation rapide
+    // fin de séance : synchronisation rapide ; séance en cours : peu après chaque réponse
     if (sessionsChanged) this.schedulePush(1500);
+    else if (activeChanged && !this.pushTimer) this.schedulePush(ACTIVE_PUSH_MS);
   };
+
+  /**
+   * Retour sur l'application (onglet ou appli réaffichés) : si le compte a
+   * avancé ailleurs (séance commencée sur un autre appareil…), on récupère sa
+   * progression. Jamais pendant une séance ouverte ici : elle serait remplacée
+   * sous les yeux de l'utilisateur.
+   */
+  async refresh(force = false): Promise<void> {
+    if (!this.linked || this.state.conflict || this.inflight || this.state.status === 'checking') return;
+    if (!force && this.now() - this.lastRefresh < REFRESH_MIN_MS) return;
+    if (typeof location !== 'undefined' && /^#\/seance/.test(location.hash)) return;
+    this.lastRefresh = this.now();
+    await this.check();
+  }
 
   private schedulePush(ms: number) {
     if (this.pushTimer) clearTimeout(this.pushTimer);
